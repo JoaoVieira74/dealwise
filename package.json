@@ -1,11 +1,8 @@
 {
   "name": "marketaggregator",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "description": "Marketplace listing aggregator for OLX and Facebook Marketplace Portugal",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "test": "jest --runInBand"
