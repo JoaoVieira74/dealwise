@@ -11,8 +11,9 @@
   function renderCard(l) {
     const badgeClass = l.source === 'olx' ? 'badge-olx' : 'badge-facebook';
     const badgeLabel = l.source === 'olx' ? 'OLX' : 'Facebook';
+    const safeTitle  = (l.title || '').replace(/"/g, '&quot;');
     const imgTag     = l.image_url
-      ? `<img class="card-img" src="${l.image_url}" alt="${l.title}" loading="lazy"
+      ? `<img class="card-img" src="${l.image_url}" alt="${safeTitle}" loading="lazy" referrerpolicy="no-referrer"
               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
       : '';
     const placeholder = `<div class="card-img-placeholder" ${l.image_url ? 'style="display:none"' : ''}>📦</div>`;
@@ -21,7 +22,7 @@
       <article class="card">
         ${imgTag}${placeholder}
         <div class="card-body">
-          <div class="card-title">${l.title}</div>
+          <div class="card-title">${(l.title || '').replace(/</g, '&lt;')}</div>
           ${l.price    ? `<div class="card-price">${l.price}</div>`          : ''}
           ${l.location ? `<div class="card-location">📍 ${l.location}</div>` : ''}
         </div>

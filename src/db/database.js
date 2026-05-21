@@ -22,9 +22,9 @@ function upsertListings(db, listings) {
   db.transaction((items) => { for (const item of items) stmt.run(item); })(listings);
 }
 
-function getListings(db, { source = null, limit = 100 } = {}) {
+function getListings(db, { source = null, limit = 200 } = {}) {
   return db.prepare(
-    'SELECT * FROM listings WHERE (? IS NULL OR source = ?) ORDER BY scraped_at DESC LIMIT ?'
+    'SELECT * FROM listings WHERE (? IS NULL OR source = ?) ORDER BY id DESC LIMIT ?'
   ).all(source, source, limit);
 }
 
