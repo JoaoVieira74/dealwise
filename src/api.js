@@ -1,7 +1,5 @@
 const express = require('express');
 const path = require('path');
-const https = require('https');
-const http = require('http');
 const { SOURCES, getListings, getLastScrapeStatus } = require('./db/database');
 
 function createApp(db) {
@@ -30,41 +28,36 @@ function createApp(db) {
   });
 
   // Image proxy — fetches images server-side with correct Referer header
-  app.get('/api/image', (req, res) => {
+  app.get('/api/image', async (req, res) => {
     const { url } = req.query;
     if (!url) return res.status(400).end();
 
     let parsed;
-    try {
-      parsed = new URL(url);
-    } catch {
-      return res.status(400).end();
-    }
+    try { parsed = new URL(url); } catch { return res.status(400).end(); }
 
-    // Only allow known image CDN hostnames
     const allowed = ['olx.pt', 'olxcdn.com', 'fbcdn.net', 'scontent'];
-    if (!allowed.some(h => parsed.hostname.includes(h))) {
-      return res.status(403).end();
-    }
+    if (!allowed.some(h => parsed.hostname.includes(h))) return res.status(403).end();
 
     const referer = (parsed.hostname.includes('olx') || parsed.hostname.includes('olxcdn'))
       ? 'https://www.olx.pt/'
       : 'https://www.facebook.com/';
-    const client  = parsed.protocol === 'https:' ? https : http;
 
-    const proxyReq = client.get(url, {
-      headers: {
-        'Referer': referer,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      },
-    }, (proxyRes) => {
-      if (proxyRes.statusCode >= 400) return res.status(proxyRes.statusCode).end();
-      res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'image/jpeg');
+    try {
+      const upstream = await fetch(url, {
+        headers: {
+          'Referer': referer,
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        },
+      });
+      if (!upstream.ok) return res.status(upstream.status).end();
+      const buffer = Buffer.from(await upstream.arrayBuffer());
+      res.setHeader('Content-Type', upstream.headers.get('content-type') || 'image/jpeg');
       res.setHeader('Cache-Control', 'public, max-age=86400');
-      proxyRes.pipe(res);
-    });
-
-    proxyReq.on('error', () => res.status(502).end());
+      res.send(buffer);
+    } catch (err) {
+      console.error('[proxy] image fetch error:', err.message);
+      res.status(502).end();
+    }
   });
 
   return app;
