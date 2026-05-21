@@ -12,8 +12,9 @@
     const badgeClass = l.source === 'olx' ? 'badge-olx' : 'badge-facebook';
     const badgeLabel = l.source === 'olx' ? 'OLX' : 'Facebook';
     const safeTitle  = (l.title || '').replace(/"/g, '&quot;');
-    const imgTag     = l.image_url
-      ? `<img class="card-img" src="${l.image_url}" alt="${safeTitle}" loading="lazy" referrerpolicy="no-referrer"
+    const imgSrc     = l.image_url ? `/api/image?url=${encodeURIComponent(l.image_url)}` : null;
+    const imgTag     = imgSrc
+      ? `<img class="card-img" src="${imgSrc}" alt="${safeTitle}" loading="lazy"
               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
       : '';
     const placeholder = `<div class="card-img-placeholder" ${l.image_url ? 'style="display:none"' : ''}>📦</div>`;
