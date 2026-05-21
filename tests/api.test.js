@@ -49,6 +49,33 @@ describe('GET /api/listings', () => {
     expect(res.status).toBe(400);
     db.close();
   });
+
+  test('respects limit param', async () => {
+    const db = makeDb();
+    upsertListings(db, [
+      { source: 'olx', title: 'A', price: null, location: null, category: null, image_url: null, listing_url: 'https://olx.pt/1' },
+      { source: 'olx', title: 'B', price: null, location: null, category: null, image_url: null, listing_url: 'https://olx.pt/2' },
+      { source: 'olx', title: 'C', price: null, location: null, category: null, image_url: null, listing_url: 'https://olx.pt/3' },
+    ]);
+    const res = await request(createApp(db)).get('/api/listings?limit=2');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+    db.close();
+  });
+
+  test('rejects non-integer limit with 400', async () => {
+    const db = makeDb();
+    const res = await request(createApp(db)).get('/api/listings?limit=abc');
+    expect(res.status).toBe(400);
+    db.close();
+  });
+
+  test('rejects negative limit with 400', async () => {
+    const db = makeDb();
+    const res = await request(createApp(db)).get('/api/listings?limit=-5');
+    expect(res.status).toBe(400);
+    db.close();
+  });
 });
 
 describe('GET /api/status', () => {

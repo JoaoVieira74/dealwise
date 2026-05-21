@@ -44,4 +44,4 @@ function getLastScrapeStatus(db) {
   return result;
 }
 
-module.exports = { initDb, upsertListings, getListings, logScrape, getLastScrapeStatus };
+module.exports = { SOURCES, initDb, upsertListings, getListings, logScrape, getLastScrapeStatus };
