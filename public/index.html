@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MarketAggregator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>MarketAggregator</h1>
+    <p id="last-updated">A carregar...</p>
+  </header>
+
+  <nav class="filters">
+    <button class="filter-btn active" data-source="">Todos</button>
+    <button class="filter-btn" data-source="olx">OLX</button>
+    <button class="filter-btn" data-source="facebook">Facebook</button>
+    <button id="refresh-btn">Atualizar</button>
+  </nav>
+
+  <main id="listings-grid" class="grid">
+    <div class="spinner">A carregar artigos...</div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
