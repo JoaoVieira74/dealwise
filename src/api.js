@@ -42,12 +42,14 @@ function createApp(db) {
     }
 
     // Only allow known image CDN hostnames
-    const allowed = ['static.olx.pt', 'scontent', 'fbcdn.net', 'xx.fbcdn.net'];
+    const allowed = ['olx.pt', 'olxcdn.com', 'fbcdn.net', 'scontent'];
     if (!allowed.some(h => parsed.hostname.includes(h))) {
       return res.status(403).end();
     }
 
-    const referer = parsed.hostname.includes('olx') ? 'https://www.olx.pt/' : 'https://www.facebook.com/';
+    const referer = (parsed.hostname.includes('olx') || parsed.hostname.includes('olxcdn'))
+      ? 'https://www.olx.pt/'
+      : 'https://www.facebook.com/';
     const client  = parsed.protocol === 'https:' ? https : http;
 
     const proxyReq = client.get(url, {
