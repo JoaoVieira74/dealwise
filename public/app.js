@@ -2,19 +2,37 @@
   // ── State ──────────────────────────────────────────────────────────────────
   let activeSource = '';
   let sortMode     = 'newest';
-  let allListings  = [];   // raw from API
+  let allListings  = [];
   let lastVisit    = +(localStorage.getItem('dw_last_visit') || 0);
 
-  const grid        = document.getElementById('listings-grid');
-  const lastUpdated = document.getElementById('last-updated');
-  const resultCount = document.getElementById('result-count');
-  const searchInput = document.getElementById('search-input');
-  const searchClear = document.getElementById('search-clear');
-  const sortSelect  = document.getElementById('sort-select');
-  const minPrice    = document.getElementById('min-price');
-  const maxPrice    = document.getElementById('max-price');
+  // pending feature action: { source, listing_url }
+  let pendingFeature = null;
+
+  const grid            = document.getElementById('listings-grid');
+  const featuredSection = document.getElementById('featured-section');
+  const featuredGrid    = document.getElementById('featured-grid');
+  const featuredCount   = document.getElementById('featured-count');
+  const lastUpdated     = document.getElementById('last-updated');
+  const resultCount     = document.getElementById('result-count');
+  const searchInput     = document.getElementById('search-input');
+  const searchClear     = document.getElementById('search-clear');
+  const sortSelect      = document.getElementById('sort-select');
+  const minPrice        = document.getElementById('min-price');
+  const maxPrice        = document.getElementById('max-price');
+  const featureModal    = document.getElementById('feature-modal');
 
   // ── Helpers ────────────────────────────────────────────────────────────────
+  function esc(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function safeUrl(url) {
+    try {
+      const u = new URL(url);
+      return (u.protocol === 'http:' || u.protocol === 'https:') ? url : '#';
+    } catch { return '#'; }
+  }
+
   function formatTime(iso) {
     if (!iso) return 'desconhecida';
     return new Date(iso).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
@@ -22,7 +40,6 @@
 
   function parsePrice(str) {
     if (!str) return null;
-    // "1.200,50 €" → 1200.50, "125 €" → 125
     const n = parseFloat(str.replace(/\./g, '').replace(',', '.').replace(/[^\d.]/g, ''));
     return isNaN(n) ? null : n;
   }
@@ -33,6 +50,19 @@
     return t > lastVisit;
   }
 
+  function isFeatured(l) {
+    if (!l.featured_until) return false;
+    return new Date(l.featured_until.replace(' ', 'T') + 'Z') > new Date();
+  }
+
+  function featuredExpiresText(l) {
+    if (!l.featured_until) return '';
+    const exp  = new Date(l.featured_until.replace(' ', 'T') + 'Z');
+    const days = Math.ceil((exp - new Date()) / 86400000);
+    if (days <= 0) return '';
+    return days === 1 ? 'expira amanhã' : `expira em ${days} dias`;
+  }
+
   // ── Filter + Sort ──────────────────────────────────────────────────────────
   function applyFilters(listings) {
     const q   = searchInput.value.trim().toLowerCase();
@@ -40,6 +70,7 @@
     const max = maxPrice.value ? parseFloat(maxPrice.value) : null;
 
     let result = listings.filter(l => {
+      if (activeSource === 'featured' && !isFeatured(l)) return false;
       if (q && !(l.title || '').toLowerCase().includes(q) && !(l.location || '').toLowerCase().includes(q)) return false;
       const p = parsePrice(l.price);
       if (min !== null && (p === null || p < min)) return false;
@@ -51,16 +82,14 @@
       result.sort((a, b) => {
         const pa = parsePrice(a.price), pb = parsePrice(b.price);
         if (pa === null && pb === null) return 0;
-        if (pa === null) return 1;
-        if (pb === null) return -1;
+        if (pa === null) return 1; if (pb === null) return -1;
         return pa - pb;
       });
     } else if (sortMode === 'price_desc') {
       result.sort((a, b) => {
         const pa = parsePrice(a.price), pb = parsePrice(b.price);
         if (pa === null && pb === null) return 0;
-        if (pa === null) return 1;
-        if (pb === null) return -1;
+        if (pa === null) return 1; if (pb === null) return -1;
         return pb - pa;
       });
     }
@@ -70,58 +99,154 @@
 
   // ── Render ─────────────────────────────────────────────────────────────────
   const PIN = `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;opacity:.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
+  const STAR_FILLED = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
+  const STAR_EMPTY  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
 
-  function renderCard(l) {
+  function renderCard(l, opts) {
+    const compact    = opts && opts.compact;
     const badgeClass = l.source === 'olx' ? 'badge-olx' : 'badge-facebook';
     const badgeLabel = l.source === 'olx' ? 'OLX' : 'Facebook';
-    const safeTitle  = (l.title || '').replace(/"/g, '&quot;');
+    const featured   = isFeatured(l);
     const hasImg     = l.image_url && !l.image_url.includes('no_thumbnail') && !l.image_url.includes('static/media');
     const imgSrc     = hasImg ? `/api/image?url=${encodeURIComponent(l.image_url)}` : null;
-    const imgTag     = imgSrc
-      ? `<img class="card-img" src="${imgSrc}" alt="${safeTitle}" loading="lazy"
-              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-      : '';
-    const placeholder = `<div class="card-img-placeholder" ${imgSrc ? 'style="display:none"' : ''}>🛍</div>`;
-    const newBadge    = isNew(l.scraped_at) ? '<span class="badge-new">Novo</span>' : '';
+    const safeTitle  = esc(l.title || '');
+    const imgTag     = imgSrc ? `<img class="card-img" src="${imgSrc}" alt="${safeTitle}" loading="lazy">` : '';
+    const placeholder = `<div class="card-img-placeholder"${imgSrc ? ' style="display:none"' : ''}>🛍</div>`;
+    const newBadge   = isNew(l.scraped_at) ? '<span class="badge-new">Novo</span>' : '';
+    const expText    = featured && !compact
+      ? `<span style="font-size:0.65rem;color:#b45309;margin-left:auto">${esc(featuredExpiresText(l))}</span>` : '';
+
+    const starBtn = `<button class="star-btn${featured ? ' starred' : ''}"
+      data-source="${esc(l.source)}"
+      data-url="${esc(l.listing_url)}"
+      title="${featured ? 'Remover destaque' : 'Adicionar destaque'}">${featured ? STAR_FILLED : STAR_EMPTY}</button>`;
 
     return `
-      <article class="card">
+      <article class="card${featured ? ' featured' : ''}">
         <div class="card-img-wrap">
-          ${imgTag}${placeholder}
-          ${newBadge}
+          ${imgTag}${placeholder}${newBadge}
         </div>
         <div class="card-body">
-          <div class="card-title">${(l.title || '').replace(/</g, '&lt;')}</div>
-          ${l.price    ? `<div class="card-price">${l.price}</div>` : ''}
-          ${l.location ? `<div class="card-location">${PIN} ${l.location}</div>` : ''}
+          <div class="card-title">${safeTitle}</div>
+          ${l.price    ? `<div class="card-price">${esc(l.price)}</div>` : ''}
+          ${l.location ? `<div class="card-location">${PIN} ${esc(l.location)}</div>` : ''}
         </div>
         <div class="card-footer">
           <span class="badge ${badgeClass}">${badgeLabel}</span>
-          <a class="card-link" href="${l.listing_url}" target="_blank" rel="noopener">Ver anúncio →</a>
+          ${expText}
+          ${starBtn}
+          <a class="card-link" href="${safeUrl(l.listing_url)}" target="_blank" rel="noopener noreferrer">Ver →</a>
         </div>
       </article>`;
   }
 
+  function renderFeaturedSection() {
+    const featured = allListings.filter(isFeatured);
+    if (featured.length === 0 || activeSource === 'featured') {
+      featuredSection.hidden = true;
+      return;
+    }
+    featuredSection.hidden = false;
+    featuredCount.textContent = featured.length;
+    featuredGrid.innerHTML = featured.map(l => renderCard(l, { compact: true })).join('');
+  }
+
   function renderGrid() {
     const filtered = applyFilters(allListings);
-    const total    = allListings.length;
-    const shown    = filtered.length;
+    const total    = activeSource === 'featured'
+      ? allListings.filter(isFeatured).length
+      : allListings.length;
 
-    resultCount.textContent = shown === total
+    resultCount.textContent = filtered.length === total
       ? `${total} anúncios`
-      : `${shown} de ${total} anúncios`;
+      : `${filtered.length} de ${total} anúncios`;
 
     grid.innerHTML = filtered.length
-      ? filtered.map(renderCard).join('')
+      ? filtered.map(l => renderCard(l)).join('')
       : '<p class="no-results">Nenhum anúncio encontrado para estes filtros.</p>';
+
+    renderFeaturedSection();
   }
+
+  // ── Event delegation — image error ─────────────────────────────────────────
+  document.addEventListener('error', (e) => {
+    if (e.target.classList && e.target.classList.contains('card-img')) {
+      e.target.style.display = 'none';
+      const ph = e.target.nextElementSibling;
+      if (ph) ph.style.display = 'flex';
+    }
+  }, true);
+
+  // ── Star button click ──────────────────────────────────────────────────────
+  function handleStarClick(btn) {
+    const source = btn.dataset.source;
+    const url    = btn.dataset.url;
+    if (!source || !url) return;
+
+    const listing = allListings.find(l => l.source === source && l.listing_url === url);
+    if (!listing) return;
+
+    if (isFeatured(listing)) {
+      btn.classList.add('loading');
+      fetch('/api/feature', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source, listing_url: url }),
+      }).then(r => r.json()).then(() => {
+        listing.featured_until = null;
+        renderGrid();
+      }).catch(() => {}).finally(() => btn.classList.remove('loading'));
+    } else {
+      pendingFeature = { source, listing_url: url };
+      featureModal.hidden = false;
+      featureModal.querySelector('.day-btn').focus();
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.star-btn');
+    if (btn) { e.preventDefault(); handleStarClick(btn); }
+  });
+
+  // ── Feature modal ──────────────────────────────────────────────────────────
+  function closeModal() {
+    featureModal.hidden = true;
+    pendingFeature = null;
+  }
+
+  featureModal.addEventListener('click', (e) => {
+    if (e.target === featureModal) { closeModal(); return; }
+    const dayBtn = e.target.closest('.day-btn');
+    if (!dayBtn || !pendingFeature) return;
+
+    const days = parseInt(dayBtn.dataset.days, 10);
+    const { source, listing_url } = pendingFeature;
+    closeModal();
+
+    fetch('/api/feature', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source, listing_url, days }),
+    }).then(r => r.json()).then(() => {
+      const listing = allListings.find(l => l.source === source && l.listing_url === listing_url);
+      if (listing) {
+        const exp = new Date(Date.now() + days * 86400000);
+        listing.featured_until = exp.toISOString().replace('T', ' ').slice(0, 19);
+      }
+      renderGrid();
+    }).catch(() => {});
+  });
+
+  document.getElementById('feature-cancel').addEventListener('click', closeModal);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
   // ── Load from API ──────────────────────────────────────────────────────────
   async function loadListings() {
-    const q = searchInput.value.trim();
-    let url = '/api/listings?limit=500';
-    if (activeSource) url += `&source=${activeSource}`;
-    if (q)            url += `&q=${encodeURIComponent(q)}`;
+    const q   = searchInput.value.trim();
+    const src = activeSource === 'featured' ? '' : activeSource;
+    let url   = '/api/listings?limit=500';
+    if (src) url += `&source=${src}`;
+    if (q)   url += `&q=${encodeURIComponent(q)}`;
 
     grid.innerHTML = '<div class="spinner"><div class="spinner-ring"></div><p>A carregar anúncios...</p></div>';
     resultCount.textContent = '';
@@ -136,7 +261,6 @@
       const lastRun = status.olx?.ran_at || status.facebook?.ran_at;
       lastUpdated.textContent = `Última atualização: ${formatTime(lastRun)}`;
 
-      // Update last visit after rendering so badges show correctly this session
       localStorage.setItem('dw_last_visit', Date.now());
     } catch {
       grid.innerHTML = '<p class="no-results">Erro ao carregar anúncios. O servidor está a correr?</p>';
@@ -149,11 +273,14 @@
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       activeSource = btn.dataset.source;
-      loadListings();
+      if (activeSource === 'featured') {
+        renderGrid(); // client-side only, no API call needed
+      } else {
+        loadListings();
+      }
     });
   });
 
-  // Search: debounce 300ms then hit API
   let searchTimer;
   searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim();
@@ -173,9 +300,7 @@
     renderGrid();
   });
 
-  [minPrice, maxPrice].forEach(el => {
-    el.addEventListener('input', () => renderGrid());
-  });
+  [minPrice, maxPrice].forEach(el => el.addEventListener('input', () => renderGrid()));
 
   document.getElementById('refresh-btn').addEventListener('click', loadListings);
 

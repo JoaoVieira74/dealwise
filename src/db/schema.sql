@@ -1,13 +1,14 @@
 CREATE TABLE IF NOT EXISTS listings (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  source      TEXT    NOT NULL,
-  title       TEXT    NOT NULL,
-  price       TEXT,
-  location    TEXT,
-  category    TEXT,
-  image_url   TEXT,
-  listing_url TEXT    NOT NULL,
-  scraped_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  source         TEXT    NOT NULL,
+  title          TEXT    NOT NULL,
+  price          TEXT,
+  location       TEXT,
+  category       TEXT,
+  image_url      TEXT,
+  listing_url    TEXT    NOT NULL,
+  scraped_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+  featured_until DATETIME DEFAULT NULL,
   UNIQUE(source, listing_url)
 );
 

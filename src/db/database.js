@@ -8,6 +8,11 @@ const stmtCache = new WeakMap();
 
 function initDb(db) {
   db.exec(schemaSql);
+  // Migration: add featured_until column to existing databases
+  const cols = db.prepare('PRAGMA table_info(listings)').all();
+  if (!cols.some(c => c.name === 'featured_until')) {
+    db.exec('ALTER TABLE listings ADD COLUMN featured_until DATETIME DEFAULT NULL');
+  }
 }
 
 function upsertListings(db, listings) {
@@ -43,6 +48,19 @@ function getListings(db, { source = null, limit = 500, q = null } = {}) {
   ).all(source, source, search, search, search, limit);
 }
 
+function featureListing(db, source, listing_url, days) {
+  db.prepare(
+    `UPDATE listings SET featured_until = datetime('now', '+' || ? || ' days')
+     WHERE source = ? AND listing_url = ?`
+  ).run(String(days), source, listing_url);
+}
+
+function unfeatureListing(db, source, listing_url) {
+  db.prepare(
+    'UPDATE listings SET featured_until = NULL WHERE source = ? AND listing_url = ?'
+  ).run(source, listing_url);
+}
+
 function logScrape(db, source, status, count, message) {
   db.prepare(
     'INSERT INTO scrape_log (source, status, count, message) VALUES (?, ?, ?, ?)'
@@ -59,4 +77,7 @@ function getLastScrapeStatus(db) {
   return result;
 }
 
-module.exports = { SOURCES, initDb, upsertListings, getListings, logScrape, getLastScrapeStatus };
+module.exports = {
+  SOURCES, initDb, upsertListings, getListings,
+  featureListing, unfeatureListing, logScrape, getLastScrapeStatus,
+};
