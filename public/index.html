@@ -3,25 +3,86 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MarketAggregator</title>
+  <title>Dealwise — Todos os anúncios num só lugar</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#5b4fcf" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <h1>MarketAggregator</h1>
-    <p id="last-updated">A carregar...</p>
+    <div class="header-brand">
+      <div class="logo">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="34" height="34" rx="10" fill="url(#lg)"/>
+          <path d="M9 17C9 12.58 12.58 9 17 9C19.5 9 21.74 10.08 23.3 11.82L20.5 14.5C19.68 13.57 18.41 13 17 13C14.79 13 13 14.79 13 17C13 19.21 14.79 21 17 21C18.41 21 19.68 20.43 20.5 19.5L23.3 22.18C21.74 23.92 19.5 25 17 25C12.58 25 9 21.42 9 17Z" fill="white"/>
+          <circle cx="25" cy="10" r="3.5" fill="white" fill-opacity="0.85"/>
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="34" y2="34" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#5b4fcf"/><stop offset="1" stop-color="#2563eb"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="logo-text">Dealwise</span>
+      </div>
+      <p class="tagline">Todos os anúncios de Portugal, num só lugar</p>
+    </div>
+    <div class="header-meta">
+      <span class="live-dot"></span>
+      <span id="last-updated" class="last-updated">A carregar...</span>
+    </div>
   </header>
 
+  <div class="search-bar-wrap">
+    <div class="search-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    </div>
+    <input type="search" id="search-input" placeholder="Pesquisar anúncios... ex: iPhone, BMW, sofá" autocomplete="off" />
+    <button id="search-clear" class="search-clear" title="Limpar">✕</button>
+  </div>
+
   <nav class="filters">
-    <button class="filter-btn active" data-source="">Todos</button>
-    <button class="filter-btn" data-source="olx">OLX</button>
-    <button class="filter-btn" data-source="facebook">Facebook</button>
-    <button id="refresh-btn">Atualizar</button>
+    <div class="filter-group">
+      <button class="filter-btn active" data-source="">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zm2 5h12v2H6zm3 5h6v2H9z"/></svg>
+        Todos
+      </button>
+      <button class="filter-btn" data-source="olx">
+        <span class="source-dot dot-olx"></span>OLX
+      </button>
+      <button class="filter-btn" data-source="facebook">
+        <span class="source-dot dot-fb"></span>Facebook
+      </button>
+    </div>
+    <div class="filter-right">
+      <div class="price-range">
+        <input type="number" id="min-price" placeholder="Min €" min="0" />
+        <span class="price-sep">—</span>
+        <input type="number" id="max-price" placeholder="Max €" min="0" />
+      </div>
+      <select id="sort-select">
+        <option value="newest">Mais recentes</option>
+        <option value="price_asc">Preço ↑</option>
+        <option value="price_desc">Preço ↓</option>
+      </select>
+      <button id="refresh-btn" title="Atualizar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        Atualizar
+      </button>
+    </div>
   </nav>
 
+  <div class="result-bar">
+    <span id="result-count" class="result-count"></span>
+  </div>
+
   <main id="listings-grid" class="grid">
-    <div class="spinner">A carregar artigos...</div>
+    <div class="spinner"><div class="spinner-ring"></div><p>A carregar anúncios...</p></div>
   </main>
+
+  <footer>
+    <p>Dealwise atualiza de 30 em 30 minutos &middot; Dados de <strong>OLX Portugal</strong> e <strong>Facebook Marketplace</strong></p>
+  </footer>
 
   <script src="app.js"></script>
 </body>

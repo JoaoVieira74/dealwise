@@ -4,7 +4,7 @@ const path = require('path');
 
 chromium.use(stealth());
 
-const PROFILE_DIR     = path.join(__dirname, '..', '..', 'facebook_profile');
+const PROFILE_DIR = process.env.FACEBOOK_PROFILE_DIR || path.join(__dirname, '..', '..', 'facebook_profile');
 const MARKETPLACE_URL = 'https://www.facebook.com/marketplace/portugal/';
 
 function isBlocked(url) {
@@ -13,7 +13,9 @@ function isBlocked(url) {
 }
 
 async function waitUntilUnblocked(page) {
-  for (let i = 0; i < 150; i++) {
+  const headless = process.env.FB_HEADLESS !== 'false';
+  const maxWait  = headless ? 5 : 150; // headless: 10s; headed: 5min
+  for (let i = 0; i < maxWait; i++) {
     await page.waitForTimeout(2000);
     if (!isBlocked(page.url())) return true;
   }
@@ -52,9 +54,16 @@ async function extractListings(page) {
 }
 
 async function scrapeFacebook() {
+  const fs = require('fs');
+  if (!fs.existsSync(PROFILE_DIR)) {
+    console.log('[facebook] No profile found — skipping (set FACEBOOK_PROFILE_DIR to enable)');
+    return [];
+  }
+
+  const headless = process.env.FB_HEADLESS !== 'false';
   const ctx = await chromium.launchPersistentContext(PROFILE_DIR, {
-    headless: false,
-    args: ['--no-sandbox', '--start-minimized'],
+    headless,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--start-minimized'],
     viewport: { width: 1280, height: 800 },
   });
 

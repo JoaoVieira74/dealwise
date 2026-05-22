@@ -14,18 +14,33 @@ function upsertListings(db, listings) {
   if (!Array.isArray(listings)) throw new TypeError('listings must be an array');
   if (!stmtCache.has(db)) {
     stmtCache.set(db, db.prepare(`
-      INSERT OR IGNORE INTO listings (source, title, price, location, category, image_url, listing_url)
+      INSERT INTO listings (source, title, price, location, category, image_url, listing_url)
       VALUES (@source, @title, @price, @location, @category, @image_url, @listing_url)
+      ON CONFLICT(source, listing_url) DO UPDATE SET
+        title     = excluded.title,
+        price     = excluded.price,
+        location  = excluded.location,
+        image_url = CASE
+          WHEN excluded.image_url IS NOT NULL
+           AND excluded.image_url NOT LIKE '%no_thumbnail%'
+           AND excluded.image_url NOT LIKE '%static/media%'
+          THEN excluded.image_url
+          ELSE listings.image_url
+        END
     `));
   }
   const stmt = stmtCache.get(db);
   db.transaction((items) => { for (const item of items) stmt.run(item); })(listings);
 }
 
-function getListings(db, { source = null, limit = 200 } = {}) {
+function getListings(db, { source = null, limit = 500, q = null } = {}) {
+  const search = q ? `%${q}%` : null;
   return db.prepare(
-    'SELECT * FROM listings WHERE (? IS NULL OR source = ?) ORDER BY id DESC LIMIT ?'
-  ).all(source, source, limit);
+    `SELECT * FROM listings
+     WHERE (? IS NULL OR source = ?)
+       AND (? IS NULL OR title LIKE ? OR location LIKE ?)
+     ORDER BY id DESC LIMIT ?`
+  ).all(source, source, search, search, search, limit);
 }
 
 function logScrape(db, source, status, count, message) {

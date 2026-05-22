@@ -1,0 +1,12 @@
+{
+  "name": "Dealwise",
+  "short_name": "Dealwise",
+  "description": "Todos os anúncios de Portugal num só lugar",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0f2f5",
+  "theme_color": "#5b4fcf",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

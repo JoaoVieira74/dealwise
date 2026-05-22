@@ -1,7 +1,9 @@
 node_modules/
 market.db
-facebook_cookies.json
 facebook_profile/
+facebook_cookies.json
 *.log
 /data/
+docs/
+tests/
 *.png

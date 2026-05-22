@@ -9,18 +9,18 @@ function createApp(db) {
   app.use(express.static(path.join(__dirname, '..', 'public')));
 
   app.get('/api/listings', (req, res) => {
-    const { source, limit } = req.query;
+    const { source, limit, q } = req.query;
     if (source && !SOURCES.includes(source)) {
       return res.status(400).json({ error: `source must be one of: ${SOURCES.join(', ')}` });
     }
-    let parsedLimit = 100;
+    let parsedLimit = 500;
     if (limit !== undefined) {
       parsedLimit = parseInt(limit, 10);
       if (!Number.isInteger(parsedLimit) || parsedLimit < 1) {
         return res.status(400).json({ error: 'limit must be a positive integer' });
       }
     }
-    res.json(getListings(db, { source: source || null, limit: parsedLimit }));
+    res.json(getListings(db, { source: source || null, limit: parsedLimit, q: q || null }));
   });
 
   app.get('/api/status', (req, res) => {
@@ -42,8 +42,14 @@ function createApp(db) {
       ? 'https://www.olx.pt/'
       : 'https://www.facebook.com/';
 
+    // Upgrade OLX CDN thumbnails to higher resolution
+    let fetchUrl = url;
+    if (parsed.hostname.includes('olxcdn')) {
+      fetchUrl = url.replace(/;s=\d+x\d+(;q=\d+)?/, ';s=640x427;q=82');
+    }
+
     try {
-      const upstream = await fetch(url, {
+      const upstream = await fetch(fetchUrl, {
         headers: {
           'Referer': referer,
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
