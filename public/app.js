@@ -5,7 +5,7 @@
   let allListings  = [];
   let lastVisit    = +(localStorage.getItem('dw_last_visit') || 0);
 
-  // pending feature action: { source, listing_url }
+  // pending feature action: { source, listing_url, days }
   let pendingFeature = null;
 
   const grid            = document.getElementById('listings-grid');
@@ -20,6 +20,8 @@
   const minPrice        = document.getElementById('min-price');
   const maxPrice        = document.getElementById('max-price');
   const featureModal    = document.getElementById('feature-modal');
+  const featureEmail    = document.getElementById('feature-email');
+  const featurePayBtn   = document.getElementById('feature-pay');
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function esc(str) {
@@ -197,7 +199,10 @@
         renderGrid();
       }).catch(() => {}).finally(() => btn.classList.remove('loading'));
     } else {
-      pendingFeature = { source, listing_url: url };
+      pendingFeature = { source, listing_url: url, days: null };
+      featureEmail.value = '';
+      featurePayBtn.disabled = true;
+      featureModal.querySelectorAll('.day-btn').forEach(b => b.classList.remove('selected'));
       featureModal.hidden = false;
       featureModal.querySelector('.day-btn').focus();
     }
@@ -214,27 +219,45 @@
     pendingFeature = null;
   }
 
+  function updatePayBtn() {
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(featureEmail.value.trim());
+    featurePayBtn.disabled = !pendingFeature || !pendingFeature.days || !emailOk;
+  }
+
   featureModal.addEventListener('click', (e) => {
     if (e.target === featureModal) { closeModal(); return; }
     const dayBtn = e.target.closest('.day-btn');
-    if (!dayBtn || !pendingFeature) return;
+    if (dayBtn && pendingFeature) {
+      featureModal.querySelectorAll('.day-btn').forEach(b => b.classList.remove('selected'));
+      dayBtn.classList.add('selected');
+      pendingFeature.days = parseInt(dayBtn.dataset.days, 10);
+      updatePayBtn();
+    }
+  });
 
-    const days = parseInt(dayBtn.dataset.days, 10);
-    const { source, listing_url } = pendingFeature;
+  featureEmail.addEventListener('input', updatePayBtn);
+
+  featurePayBtn.addEventListener('click', () => {
+    if (!pendingFeature || !pendingFeature.days) return;
+    const email = featureEmail.value.trim();
+    const { source, listing_url, days } = pendingFeature;
     closeModal();
+    featurePayBtn.disabled = true;
 
-    fetch('/api/feature', {
+    fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source, listing_url, days }),
-    }).then(r => r.json()).then(() => {
-      const listing = allListings.find(l => l.source === source && l.listing_url === listing_url);
-      if (listing) {
-        const exp = new Date(Date.now() + days * 86400000);
-        listing.featured_until = exp.toISOString().replace('T', ' ').slice(0, 19);
-      }
-      renderGrid();
-    }).catch(() => {});
+      body: JSON.stringify({ source, listing_url, days, email }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          alert('Erro ao iniciar pagamento. Tenta novamente.');
+        }
+      })
+      .catch(() => alert('Erro de rede. Tenta novamente.'));
   });
 
   document.getElementById('feature-cancel').addEventListener('click', closeModal);

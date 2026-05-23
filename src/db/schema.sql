@@ -12,6 +12,18 @@ CREATE TABLE IF NOT EXISTS listings (
   UNIQUE(source, listing_url)
 );
 
+CREATE TABLE IF NOT EXISTS payments (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id   TEXT    UNIQUE NOT NULL,
+  source       TEXT    NOT NULL,
+  listing_url  TEXT    NOT NULL,
+  email        TEXT    NOT NULL,
+  days         INTEGER NOT NULL,
+  amount_cents INTEGER NOT NULL,
+  status       TEXT    DEFAULT 'pending',
+  created_at   DATETIME DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS scrape_log (
   id      INTEGER PRIMARY KEY AUTOINCREMENT,
   source  TEXT    NOT NULL,

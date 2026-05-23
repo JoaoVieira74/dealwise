@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pagamento cancelado — Dealwise</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .result-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 4rem 2rem;
+      text-align: center;
+      gap: 1rem;
+    }
+    .result-icon { font-size: 3.5rem; line-height: 1; }
+    .result-title { font-size: 1.4rem; font-weight: 800; color: var(--text); }
+    .result-sub { font-size: 0.9rem; color: var(--muted); max-width: 320px; }
+    .result-back {
+      margin-top: 0.5rem;
+      padding: 0.55rem 1.4rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border-radius: 999px;
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+    .result-back:hover { opacity: 0.88; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-brand">
+      <div class="logo">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="34" height="34" rx="10" fill="url(#lg3)"/>
+          <path d="M9 17C9 12.58 12.58 9 17 9C19.5 9 21.74 10.08 23.3 11.82L20.5 14.5C19.68 13.57 18.41 13 17 13C14.79 13 13 14.79 13 17C13 19.21 14.79 21 17 21C18.41 21 19.68 20.43 20.5 19.5L23.3 22.18C21.74 23.92 19.5 25 17 25C12.58 25 9 21.42 9 17Z" fill="white"/>
+          <circle cx="25" cy="10" r="3.5" fill="white" fill-opacity="0.85"/>
+          <defs>
+            <linearGradient id="lg3" x1="0" y1="0" x2="34" y2="34" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#5b4fcf"/><stop offset="1" stop-color="#2563eb"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="logo-text">Dealwise</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="result-wrap">
+    <div class="result-icon">↩️</div>
+    <p class="result-title">Pagamento cancelado</p>
+    <p class="result-sub">Não foi cobrado nada. Podes tentar destacar o anúncio novamente quando quiseres.</p>
+    <a class="result-back" href="/">Voltar aos anúncios →</a>
+  </main>
+
+  <footer>
+    <p>Dealwise &middot; <strong>OLX Portugal</strong> e <strong>Facebook Marketplace</strong></p>
+  </footer>
+</body>
+</html>

@@ -61,6 +61,17 @@ function unfeatureListing(db, source, listing_url) {
   ).run(source, listing_url);
 }
 
+function createPayment(db, sessionId, source, listingUrl, email, days, amountCents) {
+  db.prepare(
+    `INSERT OR IGNORE INTO payments (session_id, source, listing_url, email, days, amount_cents)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  ).run(sessionId, source, listingUrl, email, days, amountCents);
+}
+
+function completePayment(db, sessionId) {
+  db.prepare(`UPDATE payments SET status = 'paid' WHERE session_id = ?`).run(sessionId);
+}
+
 function logScrape(db, source, status, count, message) {
   db.prepare(
     'INSERT INTO scrape_log (source, status, count, message) VALUES (?, ?, ?, ?)'
@@ -80,4 +91,5 @@ function getLastScrapeStatus(db) {
 module.exports = {
   SOURCES, initDb, upsertListings, getListings,
   featureListing, unfeatureListing, logScrape, getLastScrapeStatus,
+  createPayment, completePayment,
 };

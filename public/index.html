@@ -103,16 +103,23 @@
     <div class="feature-modal-box">
       <p class="feature-modal-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:#f59e0b;vertical-align:middle;margin-right:6px"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-        Destacar por quantos dias?
+        Destacar anúncio
       </p>
       <div class="days-grid">
-        <button class="day-btn" data-days="1">1 dia</button>
-        <button class="day-btn" data-days="3">3 dias</button>
-        <button class="day-btn" data-days="7">1 semana</button>
-        <button class="day-btn" data-days="14">2 semanas</button>
-        <button class="day-btn" data-days="30">1 mês</button>
+        <button class="day-btn" data-days="1" data-price="0.99">1 dia<span class="day-price">0.99€</span></button>
+        <button class="day-btn" data-days="3" data-price="1.99">3 dias<span class="day-price">1.99€</span></button>
+        <button class="day-btn" data-days="7" data-price="3.99">1 semana<span class="day-price">3.99€</span></button>
+        <button class="day-btn" data-days="14" data-price="6.99">2 semanas<span class="day-price">6.99€</span></button>
+        <button class="day-btn" data-days="30" data-price="12.99">1 mês<span class="day-price">12.99€</span></button>
       </div>
-      <button id="feature-cancel" class="feature-cancel">Cancelar</button>
+      <div class="modal-email-wrap">
+        <label class="modal-email-label" for="feature-email">Email para confirmação</label>
+        <input type="email" id="feature-email" class="modal-email-input" placeholder="o-teu@email.com" autocomplete="email" />
+      </div>
+      <div class="modal-footer">
+        <button id="feature-cancel" class="feature-cancel">Cancelar</button>
+        <button id="feature-pay" class="feature-pay" disabled>Pagar →</button>
+      </div>
     </div>
   </div>
 
