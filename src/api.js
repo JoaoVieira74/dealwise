@@ -2,34 +2,48 @@ const express = require('express');
 const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { SOURCES, getListings, getLastScrapeStatus, featureListing, unfeatureListing, createPayment, completePayment } = require('./db/database');
+const {
+  SOURCES, getListings, getLastScrapeStatus,
+  featureListing, unfeatureListing,
+  createPayment, completePayment,
+  createDealer, getDealerByToken, getDealerBySessionId,
+  setDealerSession, activateDealer,
+  getDealerCars, addDealerCar, removeDealerCar,
+} = require('./db/database');
 
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 300,
-  standardHeaders: true,
-  legacyHeaders: false,
+  windowMs: 15 * 60 * 1000, max: 300,
+  standardHeaders: true, legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },
 });
 
 const featureLimiterMw = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 60,
-  standardHeaders: true,
-  legacyHeaders: false,
+  windowMs: 15 * 60 * 1000, max: 60,
+  standardHeaders: true, legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },
 });
 
 const imageLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 600,
-  standardHeaders: true,
-  legacyHeaders: false,
+  windowMs: 15 * 60 * 1000, max: 600,
+  standardHeaders: true, legacyHeaders: false,
 });
 
+// Featured listing prices (cents)
 const PRICES = { 1: 99, 3: 199, 7: 399, 14: 699, 30: 1299 };
 
+// Dealer subscription plans
+const DEALER_PLANS = {
+  basic:    { label: 'Básico',   amount: 2999, carLimit: 5 },
+  standard: { label: 'Standard', amount: 5999, carLimit: 15 },
+  premium:  { label: 'Premium',  amount: 9999, carLimit: 9999 },
+};
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function getStripe() {
+  if (!process.env.STRIPE_SECRET_KEY) return null;
+  return require('stripe')(process.env.STRIPE_SECRET_KEY);
+}
 
 function createApp(db) {
   const app = express();
@@ -40,48 +54,54 @@ function createApp(db) {
         defaultSrc: ["'self'"],
         scriptSrc:  ["'self'"],
         styleSrc:   ["'self'"],
-        imgSrc:     ["'self'", "data:"],
+        imgSrc:     ["'self'", "data:", "https:"],
         connectSrc: ["'self'"],
         workerSrc:  ["'self'"],
       },
     },
   }));
 
-  // ── Stripe webhook (raw body required — must be before static/json middleware) ──
-  if (process.env.STRIPE_SECRET_KEY) {
-    const Stripe = require('stripe');
-    const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+  // ── Stripe webhook (raw body — must be before static) ────────────────────
+  app.post('/api/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+    const stripe = getStripe();
+    if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) return res.status(400).end();
 
-    app.post('/api/webhook', express.raw({ type: 'application/json' }), (req, res) => {
-      const sig = req.headers['stripe-signature'];
-      if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) return res.status(400).end();
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], process.env.STRIPE_WEBHOOK_SECRET);
+    } catch (err) {
+      console.error('[stripe webhook] signature error:', err.message);
+      return res.status(400).end();
+    }
 
-      let event;
-      try {
-        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-      } catch (err) {
-        console.error('[stripe webhook] signature error:', err.message);
-        return res.status(400).end();
-      }
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const { source, listing_url, days, dealer_token } = session.metadata || {};
 
-      if (event.type === 'checkout.session.completed') {
-        const session = event.data.object;
-        if (session.payment_status === 'paid') {
-          const { source, listing_url, days } = session.metadata || {};
-          const d = parseInt(days, 10);
-          if (SOURCES.includes(source) && listing_url && PRICES[d]) {
-            featureListing(db, source, listing_url, d);
-            completePayment(db, session.id);
-          }
+      // Featured listing payment
+      if (source && listing_url && days && session.payment_status === 'paid') {
+        const d = parseInt(days, 10);
+        if (SOURCES.includes(source) && PRICES[d]) {
+          featureListing(db, source, listing_url, d);
+          completePayment(db, session.id);
         }
       }
 
-      res.json({ received: true });
-    });
-  }
+      // Dealer subscription
+      if (dealer_token) {
+        const dealer = getDealerByToken(db, dealer_token);
+        if (dealer && dealer.status !== 'active') {
+          activateDealer(db, dealer_token, session.subscription, session.customer);
+        }
+      }
+    }
+
+    res.json({ received: true });
+  });
 
   app.use(express.static(path.join(__dirname, '..', 'public')));
 
+  // ── Listings ──────────────────────────────────────────────────────────────
   app.get('/api/listings', apiLimiter, (req, res) => {
     const { source, limit, q } = req.query;
     if (source && !SOURCES.includes(source)) {
@@ -101,27 +121,21 @@ function createApp(db) {
     res.json(getLastScrapeStatus(db));
   });
 
-  // ── Stripe checkout ────────────────────────────────────────────────────────
+  // ── Featured listing checkout ─────────────────────────────────────────────
   app.post('/api/checkout', featureLimiterMw, express.json({ limit: '4kb' }), async (req, res) => {
-    if (!process.env.STRIPE_SECRET_KEY) {
-      return res.status(503).json({ error: 'Payments not configured' });
-    }
+    const stripe = getStripe();
+    if (!stripe) return res.status(503).json({ error: 'Payments not configured' });
 
     const { source, listing_url, days, email } = req.body || {};
-
     if (!SOURCES.includes(source)) return res.status(400).json({ error: 'invalid source' });
     if (!listing_url || typeof listing_url !== 'string' || listing_url.length > 1000)
       return res.status(400).json({ error: 'invalid listing_url' });
     const d = parseInt(days, 10);
     if (!PRICES[d]) return res.status(400).json({ error: 'invalid days' });
-    if (!email || typeof email !== 'string' || !EMAIL_RE.test(email))
-      return res.status(400).json({ error: 'invalid email' });
+    if (!email || !EMAIL_RE.test(email)) return res.status(400).json({ error: 'invalid email' });
 
     try {
-      const Stripe = require('stripe');
-      const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
       const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
-
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         customer_email: email,
@@ -135,12 +149,10 @@ function createApp(db) {
         }],
         mode: 'payment',
         success_url: `${baseUrl}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/cancel.html`,
+        cancel_url:  `${baseUrl}/cancel.html`,
         metadata: { source, listing_url, days: String(d) },
       });
-
       createPayment(db, session.id, source, listing_url, email, d, PRICES[d]);
-
       res.json({ url: session.url });
     } catch (err) {
       console.error('[stripe] checkout error:', err.message);
@@ -148,29 +160,25 @@ function createApp(db) {
     }
   });
 
-  // ── Verify payment + activate featured ────────────────────────────────────
+  // ── Featured listing verify ───────────────────────────────────────────────
   app.get('/api/verify', apiLimiter, async (req, res) => {
-    if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Payments not configured' });
+    const stripe = getStripe();
+    if (!stripe) return res.status(503).json({ error: 'Payments not configured' });
 
     const { session_id } = req.query;
     if (!session_id || typeof session_id !== 'string' || session_id.length > 200)
       return res.status(400).json({ error: 'invalid session_id' });
 
     try {
-      const Stripe = require('stripe');
-      const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
       const session = await stripe.checkout.sessions.retrieve(session_id);
-
       if (session.payment_status !== 'paid') return res.json({ paid: false });
 
       const { source, listing_url, days } = session.metadata || {};
       const d = parseInt(days, 10);
-
       if (SOURCES.includes(source) && listing_url && PRICES[d]) {
         featureListing(db, source, listing_url, d);
         completePayment(db, session_id);
       }
-
       res.json({ paid: true, days: d });
     } catch (err) {
       console.error('[stripe] verify error:', err.message);
@@ -178,25 +186,173 @@ function createApp(db) {
     }
   });
 
-  // ── Unfeature (free) ───────────────────────────────────────────────────────
+  // ── Unfeature ─────────────────────────────────────────────────────────────
   app.delete('/api/feature', featureLimiterMw, express.json({ limit: '4kb' }), (req, res) => {
     const { source, listing_url } = req.body || {};
     if (!SOURCES.includes(source)) return res.status(400).json({ error: 'invalid source' });
-    if (!listing_url || typeof listing_url !== 'string') {
+    if (!listing_url || typeof listing_url !== 'string')
       return res.status(400).json({ error: 'invalid listing_url' });
-    }
     unfeatureListing(db, source, listing_url);
     res.json({ ok: true });
   });
 
-  // Image proxy — fetches images server-side with correct Referer header
+  // ── Dealer: apply / subscribe ─────────────────────────────────────────────
+  app.post('/api/dealers/apply', featureLimiterMw, express.json({ limit: '8kb' }), async (req, res) => {
+    const stripe = getStripe();
+    if (!stripe) return res.status(503).json({ error: 'Payments not configured' });
+
+    const { company, contact_name, email, phone, plan } = req.body || {};
+    if (!company || typeof company !== 'string' || company.trim().length < 2)
+      return res.status(400).json({ error: 'invalid company' });
+    if (!contact_name || typeof contact_name !== 'string' || contact_name.trim().length < 2)
+      return res.status(400).json({ error: 'invalid contact_name' });
+    if (!email || !EMAIL_RE.test(email))
+      return res.status(400).json({ error: 'invalid email' });
+    if (!DEALER_PLANS[plan])
+      return res.status(400).json({ error: 'invalid plan' });
+
+    const planInfo = DEALER_PLANS[plan];
+    const token = createDealer(db, {
+      company: company.trim(),
+      contactName: contact_name.trim(),
+      email: email.trim(),
+      phone: phone?.trim() || null,
+      plan,
+      carLimit: planInfo.carLimit,
+    });
+
+    try {
+      const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        customer_email: email.trim(),
+        line_items: [{
+          price_data: {
+            currency: 'eur',
+            product_data: { name: `Plano ${planInfo.label} — Dealwise Concessionárias` },
+            unit_amount: planInfo.amount,
+            recurring: { interval: 'month' },
+          },
+          quantity: 1,
+        }],
+        mode: 'subscription',
+        success_url: `${baseUrl}/dealer-success.html?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url:  `${baseUrl}/advertise.html`,
+        metadata: { dealer_token: token },
+      });
+      setDealerSession(db, token, session.id);
+      res.json({ url: session.url });
+    } catch (err) {
+      console.error('[stripe] dealer checkout error:', err.message);
+      res.status(500).json({ error: 'Failed to create checkout session' });
+    }
+  });
+
+  // ── Dealer: verify subscription ───────────────────────────────────────────
+  app.get('/api/dealers/verify', apiLimiter, async (req, res) => {
+    const stripe = getStripe();
+    if (!stripe) return res.status(503).json({ error: 'Payments not configured' });
+
+    const { session_id } = req.query;
+    if (!session_id || typeof session_id !== 'string' || session_id.length > 200)
+      return res.status(400).json({ error: 'invalid session_id' });
+
+    try {
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+      const isPaid = session.payment_status === 'paid' || !!session.subscription;
+      if (!isPaid) return res.json({ ok: false });
+
+      const dealer = getDealerBySessionId(db, session_id);
+      if (!dealer) return res.status(404).json({ error: 'dealer not found' });
+
+      if (dealer.status !== 'active') {
+        activateDealer(db, dealer.token, session.subscription, session.customer);
+      }
+      res.json({ ok: true, token: dealer.token, company: dealer.company });
+    } catch (err) {
+      console.error('[stripe] dealer verify error:', err.message);
+      res.status(500).json({ error: 'verification failed' });
+    }
+  });
+
+  // ── Dealer: portal info ───────────────────────────────────────────────────
+  app.get('/api/dealers/portal', apiLimiter, (req, res) => {
+    const { token } = req.query;
+    if (!token || typeof token !== 'string') return res.status(400).json({ error: 'invalid token' });
+
+    const dealer = getDealerByToken(db, token);
+    if (!dealer || dealer.status !== 'active') return res.status(403).json({ error: 'unauthorized' });
+
+    const cars = getDealerCars(db, dealer.id);
+    res.json({
+      dealer: {
+        company: dealer.company,
+        contact_name: dealer.contact_name,
+        email: dealer.email,
+        plan: dealer.plan,
+        car_limit: dealer.car_limit,
+      },
+      cars,
+    });
+  });
+
+  // ── Dealer: add car ───────────────────────────────────────────────────────
+  app.post('/api/dealers/cars', featureLimiterMw, express.json({ limit: '8kb' }), (req, res) => {
+    const { token, title, price, location, image_url, contact_url } = req.body || {};
+
+    if (!token || typeof token !== 'string') return res.status(400).json({ error: 'invalid token' });
+    const dealer = getDealerByToken(db, token);
+    if (!dealer || dealer.status !== 'active') return res.status(403).json({ error: 'unauthorized' });
+
+    if (!title || typeof title !== 'string' || title.trim().length < 2 || title.length > 300)
+      return res.status(400).json({ error: 'invalid title' });
+
+    const cars = getDealerCars(db, dealer.id);
+    if (dealer.car_limit !== 9999 && cars.length >= dealer.car_limit)
+      return res.status(400).json({ error: `car limit reached (${dealer.car_limit})` });
+
+    if (contact_url) {
+      try {
+        const u = new URL(contact_url);
+        if (!['http:', 'https:', 'tel:', 'mailto:'].includes(u.protocol))
+          return res.status(400).json({ error: 'invalid contact_url protocol' });
+      } catch {
+        return res.status(400).json({ error: 'invalid contact_url' });
+      }
+    }
+
+    const listingUrl = addDealerCar(db, dealer.id, {
+      title: title.trim(),
+      price: price?.trim() || null,
+      location: location?.trim() || null,
+      imageUrl: image_url?.trim() || null,
+      contactUrl: contact_url?.trim() || null,
+    });
+    res.json({ ok: true, listing_url: listingUrl });
+  });
+
+  // ── Dealer: remove car ────────────────────────────────────────────────────
+  app.delete('/api/dealers/cars/:id', featureLimiterMw, express.json({ limit: '4kb' }), (req, res) => {
+    const { token } = req.body || {};
+    if (!token || typeof token !== 'string') return res.status(400).json({ error: 'invalid token' });
+
+    const dealer = getDealerByToken(db, token);
+    if (!dealer || dealer.status !== 'active') return res.status(403).json({ error: 'unauthorized' });
+
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id) || id < 1) return res.status(400).json({ error: 'invalid id' });
+
+    const ok = removeDealerCar(db, id, dealer.id);
+    res.json({ ok });
+  });
+
+  // ── Image proxy ───────────────────────────────────────────────────────────
   app.get('/api/image', imageLimiter, async (req, res) => {
     const { url } = req.query;
     if (!url) return res.status(400).end();
 
     let parsed;
     try { parsed = new URL(url); } catch { return res.status(400).end(); }
-
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return res.status(400).end();
 
     const allowed = ['olx.pt', 'olxcdn.com', 'fbcdn.net', 'scontent'];

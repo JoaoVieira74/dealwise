@@ -106,25 +106,32 @@
 
   function renderCard(l, opts) {
     const compact    = opts && opts.compact;
-    const badgeClass = l.source === 'olx' ? 'badge-olx' : 'badge-facebook';
-    const badgeLabel = l.source === 'olx' ? 'OLX' : 'Facebook';
+    const isDealer   = l.source === 'dealer';
+    const badgeClass = l.source === 'olx' ? 'badge-olx' : l.source === 'facebook' ? 'badge-facebook' : 'badge-dealer';
+    const badgeLabel = l.source === 'olx' ? 'OLX' : l.source === 'facebook' ? 'Facebook' : 'Concessionária';
     const featured   = isFeatured(l);
     const hasImg     = l.image_url && !l.image_url.includes('no_thumbnail') && !l.image_url.includes('static/media');
-    const imgSrc     = hasImg ? `/api/image?url=${encodeURIComponent(l.image_url)}` : null;
+    // Dealer images are direct URLs; scraped images go through the proxy
+    const imgSrc     = hasImg
+      ? (isDealer ? l.image_url : `/api/image?url=${encodeURIComponent(l.image_url)}`)
+      : null;
     const safeTitle  = esc(l.title || '');
     const imgTag     = imgSrc ? `<img class="card-img" src="${imgSrc}" alt="${safeTitle}" loading="lazy">` : '';
-    const placeholder = `<div class="card-img-placeholder"${imgSrc ? ' style="display:none"' : ''}>🛍</div>`;
+    const placeholder = `<div class="card-img-placeholder"${imgSrc ? ' style="display:none"' : ''}>${isDealer ? '🚗' : '🛍'}</div>`;
     const newBadge   = isNew(l.scraped_at) ? '<span class="badge-new">Novo</span>' : '';
     const expText    = featured && !compact
       ? `<span style="font-size:0.65rem;color:#b45309;margin-left:auto">${esc(featuredExpiresText(l))}</span>` : '';
 
-    const starBtn = `<button class="star-btn${featured ? ' starred' : ''}"
+    // Dealer listings: show contact link instead of listing URL; no star button
+    const linkHref  = isDealer ? safeUrl(l.contact_url || '#') : safeUrl(l.listing_url);
+    const linkLabel = isDealer ? 'Contactar →' : 'Ver →';
+    const starBtn   = isDealer ? '' : `<button class="star-btn${featured ? ' starred' : ''}"
       data-source="${esc(l.source)}"
       data-url="${esc(l.listing_url)}"
       title="${featured ? 'Remover destaque' : 'Adicionar destaque'}">${featured ? STAR_FILLED : STAR_EMPTY}</button>`;
 
     return `
-      <article class="card${featured ? ' featured' : ''}">
+      <article class="card${featured ? ' featured' : ''}${isDealer ? ' card-dealer' : ''}">
         <div class="card-img-wrap">
           ${imgTag}${placeholder}${newBadge}
         </div>
@@ -137,7 +144,7 @@
           <span class="badge ${badgeClass}">${badgeLabel}</span>
           ${expText}
           ${starBtn}
-          <a class="card-link" href="${safeUrl(l.listing_url)}" target="_blank" rel="noopener noreferrer">Ver →</a>
+          <a class="card-link card-link-${isDealer ? 'dealer' : 'default'}" href="${linkHref}" target="_blank" rel="noopener noreferrer">${linkLabel}</a>
         </div>
       </article>`;
   }

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Subscrição confirmada — Dealwise</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .page-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 4rem 2rem;
+      text-align: center;
+      gap: 1.25rem;
+    }
+    .page-icon { font-size: 4rem; line-height: 1; }
+    .page-title { font-size: 1.6rem; font-weight: 800; color: var(--text); }
+    .page-sub { font-size: .9rem; color: var(--muted); max-width: 420px; line-height: 1.6; }
+    .portal-link-box {
+      background: #f0f4ff;
+      border: 1.5px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 1rem 1.5rem;
+      max-width: 480px;
+      width: 100%;
+    }
+    .portal-link-label { font-size: .75rem; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: .5px; margin-bottom: .4rem; }
+    .portal-link-url {
+      font-size: .82rem;
+      color: var(--text);
+      word-break: break-all;
+      font-family: monospace;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .5rem .75rem;
+      display: block;
+      margin-top: .4rem;
+    }
+    .portal-link-note { font-size: .75rem; color: var(--muted); margin-top: .5rem; }
+    .btn-portal {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .75rem 1.6rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border-radius: 999px;
+      font-size: .9rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: opacity .15s;
+      box-shadow: 0 4px 16px rgba(91,79,207,.3);
+    }
+    .btn-portal:hover { opacity: .88; }
+    .btn-secondary {
+      font-size: .82rem;
+      color: var(--muted);
+      text-decoration: none;
+    }
+    .btn-secondary:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-brand">
+      <div class="logo">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+          <rect width="34" height="34" rx="10" fill="url(#ds-lg)"/>
+          <path d="M9 17C9 12.58 12.58 9 17 9C19.5 9 21.74 10.08 23.3 11.82L20.5 14.5C19.68 13.57 18.41 13 17 13C14.79 13 13 14.79 13 17C13 19.21 14.79 21 17 21C18.41 21 19.68 20.43 20.5 19.5L23.3 22.18C21.74 23.92 19.5 25 17 25C12.58 25 9 21.42 9 17Z" fill="white"/>
+          <circle cx="25" cy="10" r="3.5" fill="white" fill-opacity=".85"/>
+          <defs>
+            <linearGradient id="ds-lg" x1="0" y1="0" x2="34" y2="34" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#5b4fcf"/><stop offset="1" stop-color="#2563eb"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="logo-text">Dealwise</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-wrap" id="content">
+    <div class="page-icon">⏳</div>
+    <p class="page-title">A verificar subscrição…</p>
+    <p class="page-sub">Aguarda um momento.</p>
+  </main>
+
+  <footer>
+    <p>Dealwise &middot; <strong>OLX Portugal</strong> e <strong>Facebook Marketplace</strong></p>
+  </footer>
+
+  <script>
+    (function () {
+      const params    = new URLSearchParams(location.search);
+      const sessionId = params.get('session_id');
+      const el        = document.getElementById('content');
+
+      function showError() {
+        el.innerHTML = `
+          <div class="page-icon">❌</div>
+          <p class="page-title">Erro ao verificar subscrição</p>
+          <p class="page-sub">Se o pagamento foi concluído, o teu acesso será ativado em breve. Guarda este link para aceder ao painel mais tarde.</p>
+          <a href="/" class="btn-secondary">Voltar ao início</a>
+        `;
+      }
+
+      if (!sessionId) { showError(); return; }
+
+      fetch('/api/dealers/verify?session_id=' + encodeURIComponent(sessionId))
+        .then(r => r.json())
+        .then(data => {
+          if (!data.ok) {
+            el.innerHTML = `
+              <div class="page-icon">⏳</div>
+              <p class="page-title">Pagamento em processamento</p>
+              <p class="page-sub">O teu acesso será ativado assim que o pagamento for confirmado pela Stripe. Isso pode demorar alguns segundos.</p>
+              <a href="/" class="btn-secondary">Voltar ao início</a>
+            `;
+            return;
+          }
+
+          const portalUrl = location.origin + '/dealer-portal.html?token=' + encodeURIComponent(data.token);
+
+          el.innerHTML = `
+            <div class="page-icon">🎉</div>
+            <p class="page-title">Bem-vindo, ${escHtml(data.company)}!</p>
+            <p class="page-sub">A tua subscrição foi confirmada. Guarda o link do painel — é a tua chave de acesso exclusiva.</p>
+            <div class="portal-link-box">
+              <div class="portal-link-label">O teu painel de gestão</div>
+              <code class="portal-link-url">${escHtml(portalUrl)}</code>
+              <p class="portal-link-note">⚠️ Guarda este link — não é possível recuperá-lo depois.</p>
+            </div>
+            <a class="btn-portal" href="${escAttr(portalUrl)}">Aceder ao painel →</a>
+            <a href="/" class="btn-secondary">Ver anúncios</a>
+          `;
+        })
+        .catch(showError);
+
+      function escHtml(s) {
+        return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+      function escAttr(s) {
+        return (s || '').replace(/"/g,'&quot;');
+      }
+    })();
+  </script>
+</body>
+</html>

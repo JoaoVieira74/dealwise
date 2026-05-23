@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Publicite os seus carros — Dealwise para Concessionárias</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Advertise page overrides ── */
+    body { background: #f8f9fb; }
+
+    .adv-nav {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .adv-nav-link {
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-decoration: none;
+      padding: .38rem .9rem;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      transition: all .15s;
+    }
+    .adv-nav-link:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Hero */
+    .adv-hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: center;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 5rem 2rem;
+    }
+    .adv-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(91,79,207,.08);
+      padding: .25rem .7rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 1rem;
+    }
+    .adv-hero h1 {
+      font-size: 2.6rem;
+      font-weight: 900;
+      line-height: 1.15;
+      color: var(--text);
+      letter-spacing: -.5px;
+      margin-bottom: 1rem;
+    }
+    .adv-hero h1 span { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .adv-hero p { font-size: .97rem; color: var(--muted); line-height: 1.6; margin-bottom: 1.8rem; max-width: 460px; }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .75rem 1.6rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border-radius: 999px;
+      font-size: .9rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: opacity .15s;
+      box-shadow: 0 4px 16px rgba(91,79,207,.3);
+    }
+    .btn-primary:hover { opacity: .88; }
+
+    /* Hero visual */
+    .adv-hero-visual { display: flex; flex-direction: column; gap: 1rem; }
+    .mock-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,.08);
+    }
+    .mock-img {
+      height: 160px;
+      background: linear-gradient(135deg, #e9ebee, #dde0e6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+    }
+    .mock-body { padding: .85rem; }
+    .mock-title { font-size: .88rem; font-weight: 600; color: var(--text); margin-bottom: .25rem; }
+    .mock-price { font-size: 1rem; font-weight: 700; color: var(--accent); margin-bottom: .5rem; }
+    .mock-footer {
+      padding: .65rem .85rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      background: #fafbfc;
+    }
+    .badge-dealer-preview {
+      font-size: .64rem;
+      font-weight: 700;
+      padding: .2rem .5rem;
+      border-radius: 5px;
+      background: #ecfdf5;
+      color: #065f46;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .mock-link {
+      margin-left: auto;
+      font-size: .77rem;
+      color: var(--accent);
+      font-weight: 600;
+      padding: .28rem .65rem;
+      border: 1.5px solid var(--accent);
+      border-radius: 6px;
+    }
+
+    /* Stats bar */
+    .adv-stats {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      padding: 2rem;
+    }
+    .adv-stats-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      text-align: center;
+    }
+    .adv-stat-num { font-size: 2rem; font-weight: 900; color: white; }
+    .adv-stat-label { font-size: .8rem; color: rgba(255,255,255,.8); margin-top: .15rem; }
+
+    /* Features */
+    .adv-features {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    .adv-feature {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+    }
+    .adv-feature-icon { font-size: 2rem; margin-bottom: .75rem; }
+    .adv-feature h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: .5rem; }
+    .adv-feature p { font-size: .85rem; color: var(--muted); line-height: 1.6; }
+
+    /* Steps */
+    .adv-steps { background: white; padding: 4rem 2rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .adv-steps-inner { max-width: 1100px; margin: 0 auto; }
+    .adv-steps h2 { font-size: 1.6rem; font-weight: 800; text-align: center; margin-bottom: 2.5rem; color: var(--text); }
+    .adv-steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+    .adv-step { text-align: center; }
+    .adv-step-num {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      font-size: 1.2rem;
+      font-weight: 800;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+    }
+    .adv-step h3 { font-size: .95rem; font-weight: 700; color: var(--text); margin-bottom: .4rem; }
+    .adv-step p { font-size: .85rem; color: var(--muted); line-height: 1.6; }
+
+    /* Pricing */
+    .adv-pricing { max-width: 1100px; margin: 0 auto; padding: 4rem 2rem; text-align: center; }
+    .adv-pricing h2 { font-size: 1.6rem; font-weight: 800; color: var(--text); margin-bottom: .5rem; }
+    .adv-pricing-sub { font-size: .88rem; color: var(--muted); margin-bottom: 2.5rem; }
+    .adv-plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+
+    .adv-plan {
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      position: relative;
+      text-align: left;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .adv-plan:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,.1); }
+    .adv-plan-featured { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent)22; }
+
+    .adv-plan-tag {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      font-size: .65rem;
+      font-weight: 700;
+      padding: .2rem .7rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      white-space: nowrap;
+    }
+    .adv-plan-name { font-size: .82rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: .5rem; }
+    .adv-plan-price { font-size: 2rem; font-weight: 900; color: var(--text); margin-bottom: 1.25rem; }
+    .adv-plan-price span { font-size: .9rem; font-weight: 500; color: var(--muted); }
+    .adv-plan-features { list-style: none; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: .5rem; }
+    .adv-plan-features li { font-size: .85rem; color: var(--text); display: flex; align-items: center; gap: .4rem; }
+
+    .adv-plan-btn {
+      width: 100%;
+      padding: .65rem;
+      border: 1.5px solid var(--accent);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--accent);
+      font-size: .85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .adv-plan-featured .adv-plan-btn {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: transparent;
+      color: white;
+    }
+    .adv-plan-btn:hover { background: var(--accent); color: white; }
+    .adv-plan-featured .adv-plan-btn:hover { opacity: .88; }
+
+    /* Form */
+    .adv-form-section {
+      background: white;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 4rem 2rem;
+    }
+    .adv-form-inner { max-width: 640px; margin: 0 auto; }
+    .adv-form-section h2 { font-size: 1.6rem; font-weight: 800; color: var(--text); margin-bottom: .5rem; }
+    .adv-form-sub { font-size: .88rem; color: var(--muted); margin-bottom: 2rem; }
+    .adv-form { display: flex; flex-direction: column; gap: 1rem; }
+    .adv-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .adv-form-field { display: flex; flex-direction: column; gap: .35rem; }
+    .adv-form-field label { font-size: .78rem; font-weight: 600; color: var(--text); }
+    .adv-form-field input, .adv-form-field select {
+      padding: .6rem .85rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: .88rem;
+      color: var(--text);
+      background: white;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .adv-form-field input:focus, .adv-form-field select:focus { border-color: var(--accent); }
+    .adv-form-error { color: #ef4444; font-size: .82rem; display: none; }
+    .adv-submit-btn {
+      padding: .75rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border: none;
+      border-radius: 999px;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s;
+      box-shadow: 0 4px 16px rgba(91,79,207,.3);
+    }
+    .adv-submit-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .adv-submit-btn:not(:disabled):hover { opacity: .88; }
+    .adv-form-note { font-size: .75rem; color: var(--muted); text-align: center; }
+
+    @media (max-width: 800px) {
+      .adv-hero { grid-template-columns: 1fr; padding: 3rem 1.25rem; gap: 2rem; }
+      .adv-hero h1 { font-size: 1.8rem; }
+      .adv-hero-visual { display: none; }
+      .adv-stats-inner { grid-template-columns: 1fr; gap: 1.5rem; }
+      .adv-features { grid-template-columns: 1fr; padding: 2rem 1.25rem; }
+      .adv-steps-grid { grid-template-columns: 1fr; }
+      .adv-plans { grid-template-columns: 1fr; }
+      .adv-form-row { grid-template-columns: 1fr; }
+      .adv-pricing, .adv-steps { padding: 2.5rem 1.25rem; }
+      .adv-steps { padding: 2.5rem 1.25rem; }
+      .adv-form-section { padding: 2.5rem 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav class="adv-nav">
+    <div class="logo">
+      <svg width="30" height="30" viewBox="0 0 34 34" fill="none">
+        <rect width="34" height="34" rx="10" fill="url(#adv-lg)"/>
+        <path d="M9 17C9 12.58 12.58 9 17 9C19.5 9 21.74 10.08 23.3 11.82L20.5 14.5C19.68 13.57 18.41 13 17 13C14.79 13 13 14.79 13 17C13 19.21 14.79 21 17 21C18.41 21 19.68 20.43 20.5 19.5L23.3 22.18C21.74 23.92 19.5 25 17 25C12.58 25 9 21.42 9 17Z" fill="white"/>
+        <circle cx="25" cy="10" r="3.5" fill="white" fill-opacity=".85"/>
+        <defs>
+          <linearGradient id="adv-lg" x1="0" y1="0" x2="34" y2="34" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#5b4fcf"/><stop offset="1" stop-color="#2563eb"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="logo-text">Dealwise</span>
+    </div>
+    <a href="/" class="adv-nav-link">← Ver anúncios</a>
+  </nav>
+
+  <!-- Hero -->
+  <section class="adv-hero">
+    <div class="adv-hero-content">
+      <div class="adv-tag">🚗 Para Concessionárias</div>
+      <h1>Chegue a <span>milhares de compradores</span> todos os dias</h1>
+      <p>Publique o stock da sua concessionária no maior agregador de anúncios de Portugal. Os seus carros aparecem ao lado do OLX e Facebook Marketplace numa só plataforma.</p>
+      <a href="#planos" class="btn-primary">Ver planos →</a>
+    </div>
+    <div class="adv-hero-visual">
+      <div class="mock-card">
+        <div class="mock-img">🚘</div>
+        <div class="mock-body">
+          <div class="mock-title">BMW Série 3 320d Sport Line</div>
+          <div class="mock-price">28 900€</div>
+        </div>
+        <div class="mock-footer">
+          <span class="badge-dealer-preview">Concessionária</span>
+          <span class="mock-link">Contactar →</span>
+        </div>
+      </div>
+      <div class="mock-card">
+        <div class="mock-img">🚗</div>
+        <div class="mock-body">
+          <div class="mock-title">Mercedes-Benz GLA 200 AMG Line</div>
+          <div class="mock-price">35 500€</div>
+        </div>
+        <div class="mock-footer">
+          <span class="badge-dealer-preview">Concessionária</span>
+          <span class="mock-link">Contactar →</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats bar -->
+  <div class="adv-stats">
+    <div class="adv-stats-inner">
+      <div>
+        <div class="adv-stat-num">500+</div>
+        <div class="adv-stat-label">Anúncios agregados diariamente</div>
+      </div>
+      <div>
+        <div class="adv-stat-num">30 min</div>
+        <div class="adv-stat-label">Frequência de atualização</div>
+      </div>
+      <div>
+        <div class="adv-stat-num">100%</div>
+        <div class="adv-stat-label">Leads diretas para si</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="adv-features">
+    <div class="adv-feature">
+      <div class="adv-feature-icon">📊</div>
+      <h3>Visibilidade máxima</h3>
+      <p>Os seus carros aparecem misturados com anúncios do OLX e Facebook, com badge "Concessionária" que gera confiança nos compradores.</p>
+    </div>
+    <div class="adv-feature">
+      <div class="adv-feature-icon">🎯</div>
+      <h3>Leads qualificadas</h3>
+      <p>Quem usa o Dealwise está ativamente à procura de carros. Contactos diretos via WhatsApp, telefone ou website — sem intermediários.</p>
+    </div>
+    <div class="adv-feature">
+      <div class="adv-feature-icon">⚡</div>
+      <h3>Publicação imediata</h3>
+      <p>Registe-se, pague e publique os seus carros em menos de 5 minutos. Sem aprovação manual. Actualize o stock quando quiser.</p>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="adv-steps">
+    <div class="adv-steps-inner">
+      <h2>Como funciona</h2>
+      <div class="adv-steps-grid">
+        <div class="adv-step">
+          <div class="adv-step-num">1</div>
+          <h3>Escolha o plano</h3>
+          <p>Selecione o número de carros que pretende publicitar. Sem contratos — cancele quando quiser.</p>
+        </div>
+        <div class="adv-step">
+          <div class="adv-step-num">2</div>
+          <h3>Pague de forma segura</h3>
+          <p>Subscrição mensal via Stripe com cartão de crédito. Recebe acesso ao painel imediatamente após o pagamento.</p>
+        </div>
+        <div class="adv-step">
+          <div class="adv-step-num">3</div>
+          <h3>Gira o seu stock</h3>
+          <p>Aceda ao painel exclusivo e adicione, edite ou remova carros em segundos. Ficam visíveis imediatamente para todos os utilizadores.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pricing -->
+  <section class="adv-pricing" id="planos">
+    <h2>Planos simples e transparentes</h2>
+    <p class="adv-pricing-sub">Subscrição mensal. Sem contratos. Cancele quando quiser.</p>
+    <div class="adv-plans">
+
+      <div class="adv-plan">
+        <div class="adv-plan-name">Básico</div>
+        <div class="adv-plan-price">29.99€<span>/mês</span></div>
+        <ul class="adv-plan-features">
+          <li>✅ Até <strong>5 carros</strong> publicados</li>
+          <li>✅ Badge "Concessionária"</li>
+          <li>✅ Botão "Contactar" direto</li>
+          <li>✅ Painel de gestão</li>
+          <li>✅ Sem contrato</li>
+        </ul>
+        <button class="adv-plan-btn" data-plan="basic">Começar agora →</button>
+      </div>
+
+      <div class="adv-plan adv-plan-featured">
+        <div class="adv-plan-tag">⭐ Mais popular</div>
+        <div class="adv-plan-name">Standard</div>
+        <div class="adv-plan-price">59.99€<span>/mês</span></div>
+        <ul class="adv-plan-features">
+          <li>✅ Até <strong>15 carros</strong> publicados</li>
+          <li>✅ Badge "Concessionária"</li>
+          <li>✅ Botão "Contactar" direto</li>
+          <li>✅ Painel de gestão</li>
+          <li>✅ Sem contrato</li>
+        </ul>
+        <button class="adv-plan-btn" data-plan="standard">Começar agora →</button>
+      </div>
+
+      <div class="adv-plan">
+        <div class="adv-plan-name">Premium</div>
+        <div class="adv-plan-price">99.99€<span>/mês</span></div>
+        <ul class="adv-plan-features">
+          <li>✅ Carros <strong>ilimitados</strong></li>
+          <li>✅ Badge "Concessionária"</li>
+          <li>✅ Botão "Contactar" direto</li>
+          <li>✅ Painel de gestão</li>
+          <li>✅ Sem contrato</li>
+        </ul>
+        <button class="adv-plan-btn" data-plan="premium">Começar agora →</button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Sign-up form -->
+  <section class="adv-form-section" id="registo">
+    <div class="adv-form-inner">
+      <h2>Comece hoje</h2>
+      <p class="adv-form-sub">Preencha os seus dados e escolha o plano. Após o pagamento, recebe acesso imediato ao painel.</p>
+      <form class="adv-form" id="dealer-form" novalidate>
+        <div class="adv-form-row">
+          <div class="adv-form-field">
+            <label for="f-company">Nome da concessionária *</label>
+            <input type="text" id="f-company" name="company" required placeholder="AutoGomes Lda." maxlength="100" />
+          </div>
+          <div class="adv-form-field">
+            <label for="f-contact">Nome de contacto *</label>
+            <input type="text" id="f-contact" name="contact_name" required placeholder="João Silva" maxlength="80" />
+          </div>
+        </div>
+        <div class="adv-form-row">
+          <div class="adv-form-field">
+            <label for="f-email">Email *</label>
+            <input type="email" id="f-email" name="email" required placeholder="joao@autogomes.pt" />
+          </div>
+          <div class="adv-form-field">
+            <label for="f-phone">Telefone</label>
+            <input type="tel" id="f-phone" name="phone" placeholder="+351 912 345 678" maxlength="20" />
+          </div>
+        </div>
+        <div class="adv-form-field">
+          <label for="f-plan">Plano *</label>
+          <select id="f-plan" name="plan">
+            <option value="basic">Básico — 29.99€/mês &nbsp;(até 5 carros)</option>
+            <option value="standard" selected>Standard — 59.99€/mês (até 15 carros)</option>
+            <option value="premium">Premium — 99.99€/mês (ilimitado)</option>
+          </select>
+        </div>
+        <div class="adv-form-error" id="form-error"></div>
+        <button type="submit" class="adv-submit-btn" id="submit-btn">Subscrever agora →</button>
+        <p class="adv-form-note">🔒 Pagamento seguro via Stripe &middot; Pode cancelar a qualquer momento</p>
+      </form>
+    </div>
+  </section>
+
+  <footer>
+    <p>Dealwise &middot; <strong>OLX Portugal</strong> e <strong>Facebook Marketplace</strong></p>
+  </footer>
+
+  <script>
+    // Plan buttons scroll to form and select the plan
+    document.querySelectorAll('.adv-plan-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('f-plan').value = btn.dataset.plan;
+        document.getElementById('registo').scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => document.getElementById('f-company').focus(), 400);
+      });
+    });
+
+    // Form submission → POST /api/dealers/apply → redirect to Stripe
+    document.getElementById('dealer-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form  = e.target;
+      const btn   = document.getElementById('submit-btn');
+      const errEl = document.getElementById('form-error');
+      errEl.style.display = 'none';
+
+      const data = {
+        company:      form.company.value.trim(),
+        contact_name: form.contact_name.value.trim(),
+        email:        form.email.value.trim(),
+        phone:        form.phone.value.trim() || null,
+        plan:         form.plan.value,
+      };
+
+      if (!data.company || !data.contact_name || !data.email) {
+        errEl.textContent = 'Preencha todos os campos obrigatórios.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'A processar…';
+
+      try {
+        const res  = await fetch('/api/dealers/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const json = await res.json();
+        if (json.url) {
+          window.location.href = json.url;
+        } else {
+          errEl.textContent = json.error || 'Erro ao processar. Tenta novamente.';
+          errEl.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Subscrever agora →';
+        }
+      } catch {
+        errEl.textContent = 'Erro de rede. Verifica a tua ligação e tenta novamente.';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Subscrever agora →';
+      }
+    });
+  </script>
+</body>
+</html>
