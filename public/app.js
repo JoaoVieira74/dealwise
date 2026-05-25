@@ -107,8 +107,14 @@
   function renderCard(l, opts) {
     const compact    = opts && opts.compact;
     const isDealer   = l.source === 'dealer';
-    const badgeClass = l.source === 'olx' ? 'badge-olx' : l.source === 'facebook' ? 'badge-facebook' : 'badge-dealer';
-    const badgeLabel = l.source === 'olx' ? 'OLX' : l.source === 'facebook' ? 'Facebook' : 'Concessionária';
+    const badgeClass = l.source === 'olx' ? 'badge-olx'
+      : l.source === 'facebook'    ? 'badge-facebook'
+      : l.source === 'standvirtual'? 'badge-standvirtual'
+      : 'badge-dealer';
+    const badgeLabel = l.source === 'olx' ? 'OLX'
+      : l.source === 'facebook'    ? 'Facebook'
+      : l.source === 'standvirtual'? 'StandVirtual'
+      : 'Concessionária';
     const featured   = isFeatured(l);
     const hasImg     = l.image_url && !l.image_url.includes('no_thumbnail') && !l.image_url.includes('static/media');
     // Dealer images are direct URLs; scraped images go through the proxy
@@ -116,8 +122,11 @@
       ? (isDealer ? l.image_url : `/api/image?url=${encodeURIComponent(l.image_url)}`)
       : null;
     const safeTitle  = esc(l.title || '');
-    const imgTag     = imgSrc ? `<img class="card-img" src="${imgSrc}" alt="${safeTitle}" loading="lazy">` : '';
-    const placeholder = `<div class="card-img-placeholder"${imgSrc ? ' style="display:none"' : ''}>${isDealer ? '🚗' : '🛍'}</div>`;
+    const carEmoji   = (isDealer || l.source === 'standvirtual') ? '🚗' : '🛍';
+    // When there IS an image: render img + hidden placeholder (shown only on error via event delegation)
+    // When there is NO image: render only the placeholder
+    const imgTag     = imgSrc ? `<img class="card-img" src="${imgSrc}" alt="${safeTitle}" loading="lazy"><div class="card-img-placeholder card-img-fallback">${carEmoji}</div>` : '';
+    const placeholder = imgSrc ? '' : `<div class="card-img-placeholder">${carEmoji}</div>`;
     const newBadge   = isNew(l.scraped_at) ? '<span class="badge-new">Novo</span>' : '';
     const expText    = featured && !compact
       ? `<span style="font-size:0.65rem;color:#b45309;margin-left:auto">${esc(featuredExpiresText(l))}</span>` : '';
@@ -181,8 +190,10 @@
   document.addEventListener('error', (e) => {
     if (e.target.classList && e.target.classList.contains('card-img')) {
       e.target.style.display = 'none';
-      const ph = e.target.nextElementSibling;
-      if (ph) ph.style.display = 'flex';
+      const fallback = e.target.nextElementSibling;
+      if (fallback && fallback.classList.contains('card-img-fallback')) {
+        fallback.style.display = 'flex';
+      }
     }
   }, true);
 

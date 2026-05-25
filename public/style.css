@@ -153,6 +153,7 @@ header {
 .source-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .dot-olx    { background: var(--olx); }
 .dot-fb     { background: var(--fb); }
+.dot-sv     { background: #0077b6; }
 .dot-dealer { background: #059669; }
 
 .filter-right {
@@ -272,6 +273,7 @@ header {
   font-size: 2.2rem;
   color: #bcc0c8;
 }
+.card-img-fallback { display: none; }
 
 .badge-new {
   position: absolute;
@@ -333,9 +335,10 @@ header {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-.badge-olx      { background: #f0ebff; color: #7c3aed; }
-.badge-facebook { background: #e8f0fe; color: #1877f2; }
-.badge-dealer   { background: #ecfdf5; color: #065f46; }
+.badge-olx         { background: #f0ebff; color: #7c3aed; }
+.badge-facebook    { background: #e8f0fe; color: #1877f2; }
+.badge-standvirtual{ background: #e0f0ff; color: #005f8c; }
+.badge-dealer      { background: #ecfdf5; color: #065f46; }
 
 .card-link {
   font-size: 0.77rem;
@@ -625,3 +628,29 @@ footer strong { color: var(--text); font-weight: 600; }
   .featured-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
   .days-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ── Success / Cancel pages ─────────────────────────────────────────────── */
+.result-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 4rem 2rem;
+  text-align: center;
+  gap: 1rem;
+}
+.result-icon  { font-size: 3.5rem; line-height: 1; }
+.result-title { font-size: 1.4rem; font-weight: 800; color: var(--text); }
+.result-sub   { font-size: 0.9rem; color: var(--muted); max-width: 320px; }
+.result-back {
+  margin-top: 0.5rem;
+  padding: 0.55rem 1.4rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+.result-back:hover { opacity: 0.88; }

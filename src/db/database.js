@@ -3,7 +3,7 @@ const path = require('path');
 const { randomUUID } = require('crypto');
 
 const schemaSql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
-const SOURCES = ['olx', 'facebook', 'dealer'];
+const SOURCES = ['olx', 'facebook', 'standvirtual', 'dealer'];
 
 const stmtCache = new WeakMap();
 
@@ -152,7 +152,7 @@ function logScrape(db, source, status, count, message) {
 
 function getLastScrapeStatus(db) {
   const result = {};
-  for (const src of ['olx', 'facebook']) {
+  for (const src of ['olx', 'facebook', 'standvirtual']) {
     result[src] = db.prepare(
       'SELECT * FROM scrape_log WHERE source = ? ORDER BY ran_at DESC LIMIT 1'
     ).get(src) ?? null;

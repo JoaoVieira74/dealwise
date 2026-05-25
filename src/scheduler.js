@@ -1,14 +1,16 @@
 const cron = require('node-cron');
-const { scrapeOlx }      = require('./scrapers/olx');
-const { scrapeFacebook } = require('./scrapers/facebook');
+const { scrapeOlx }          = require('./scrapers/olx');
+const { scrapeFacebook }     = require('./scrapers/facebook');
+const { scrapeStandvirtual } = require('./scrapers/standvirtual');
 const { upsertListings, logScrape } = require('./db/database');
 
 async function runScrapeJob(db) {
   console.log('[scheduler] Starting scrape cycle...');
 
-  const [olxResult, fbResult] = await Promise.allSettled([
+  const [olxResult, fbResult, svResult] = await Promise.allSettled([
     scrapeOlx(),
     scrapeFacebook(),
+    scrapeStandvirtual(),
   ]);
 
   if (olxResult.status === 'fulfilled') {
@@ -27,6 +29,15 @@ async function runScrapeJob(db) {
   } else {
     logScrape(db, 'facebook', 'error', 0, fbResult.reason?.message ?? 'unknown');
     console.error('[scheduler] Facebook failed:', fbResult.reason);
+  }
+
+  if (svResult.status === 'fulfilled') {
+    upsertListings(db, svResult.value);
+    logScrape(db, 'standvirtual', 'ok', svResult.value.length, null);
+    console.log(`[scheduler] StandVirtual: ${svResult.value.length} listings saved`);
+  } else {
+    logScrape(db, 'standvirtual', 'error', 0, svResult.reason?.message ?? 'unknown');
+    console.error('[scheduler] StandVirtual failed:', svResult.reason);
   }
 
   console.log('[scheduler] Scrape cycle complete.');

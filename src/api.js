@@ -355,12 +355,14 @@ function createApp(db) {
     try { parsed = new URL(url); } catch { return res.status(400).end(); }
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return res.status(400).end();
 
-    const allowed = ['olx.pt', 'olxcdn.com', 'fbcdn.net', 'scontent'];
+    const allowed = ['olx.pt', 'olxcdn.com', 'fbcdn.net', 'scontent', 'standvirtual.com', 'autovit.ro'];
     if (!allowed.some(h => parsed.hostname.includes(h))) return res.status(403).end();
 
     const referer = (parsed.hostname.includes('olx') || parsed.hostname.includes('olxcdn'))
       ? 'https://www.olx.pt/'
-      : 'https://www.facebook.com/';
+      : parsed.hostname.includes('standvirtual')
+        ? 'https://www.standvirtual.com/'
+        : 'https://www.facebook.com/';
 
     let fetchUrl = url;
     if (parsed.hostname.includes('olxcdn')) {

@@ -1,0 +1,56 @@
+.page-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 4rem 2rem;
+  text-align: center;
+  gap: 1.25rem;
+}
+.page-icon { font-size: 4rem; line-height: 1; }
+.page-title { font-size: 1.6rem; font-weight: 800; color: var(--text); }
+.page-sub { font-size: .9rem; color: var(--muted); max-width: 420px; line-height: 1.6; }
+.portal-link-box {
+  background: #f0f4ff;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 1rem 1.5rem;
+  max-width: 480px;
+  width: 100%;
+}
+.portal-link-label { font-size: .75rem; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: .5px; margin-bottom: .4rem; }
+.portal-link-url {
+  font-size: .82rem;
+  color: var(--text);
+  word-break: break-all;
+  font-family: monospace;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .5rem .75rem;
+  display: block;
+  margin-top: .4rem;
+}
+.portal-link-note { font-size: .75rem; color: var(--muted); margin-top: .5rem; }
+.btn-portal {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .75rem 1.6rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  border-radius: 999px;
+  font-size: .9rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity .15s;
+  box-shadow: 0 4px 16px rgba(91,79,207,.3);
+}
+.btn-portal:hover { opacity: .88; }
+.btn-secondary {
+  font-size: .82rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+.btn-secondary:hover { color: var(--text); }

@@ -5,3 +5,4 @@ facebook_profile/
 *.log
 /data/
 *.png
+.env

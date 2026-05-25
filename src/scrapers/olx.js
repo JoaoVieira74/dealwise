@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 
-const OLX_URL = 'https://www.olx.pt/ads/';
+const OLX_URL = 'https://www.olx.pt/carros-motos-e-barcos/carros/';
 const MAX_PAGES = 3;
 
 async function scrapeOlx() {
@@ -15,7 +15,14 @@ async function scrapeOlx() {
     for (let pageNum = 1; pageNum <= MAX_PAGES; pageNum++) {
       const url = pageNum === 1 ? OLX_URL : `${OLX_URL}?page=${pageNum}`;
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.waitForSelector('[data-cy="l-card"]', { timeout: 15000 });
+
+      // Wait for consent dialog to appear, then dismiss it
+      await page.waitForTimeout(2500);
+      await page.click('[id*="onetrust-accept"], [id*="didomi-notice-agree"], button[data-cy="accept-cookies"]')
+        .catch(() => null);
+      await page.waitForTimeout(500);
+
+      await page.waitForSelector('[data-cy="l-card"]', { timeout: 20000 });
 
       // Scroll full page height to trigger all lazy-loaded images
       await page.evaluate(async () => {

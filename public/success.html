@@ -6,32 +6,7 @@
   <title>Pagamento concluído — Dealwise</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="style.css" />
-  <style>
-    .result-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      flex: 1;
-      padding: 4rem 2rem;
-      text-align: center;
-      gap: 1rem;
-    }
-    .result-icon { font-size: 3.5rem; line-height: 1; }
-    .result-title { font-size: 1.4rem; font-weight: 800; color: var(--text); }
-    .result-sub { font-size: 0.9rem; color: var(--muted); max-width: 320px; }
-    .result-back {
-      margin-top: 0.5rem;
-      padding: 0.55rem 1.4rem;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: white;
-      border-radius: 999px;
-      text-decoration: none;
-      font-size: 0.88rem;
-      font-weight: 700;
-    }
-    .result-back:hover { opacity: 0.88; }
-  </style>
+
 </head>
 <body>
   <header>
@@ -60,43 +35,9 @@
   </main>
 
   <footer>
-    <p>Dealwise &middot; <strong>OLX Portugal</strong> e <strong>Facebook Marketplace</strong></p>
+    <p>Dealwise &middot; <strong>OLX Portugal</strong>, <strong>Facebook Marketplace</strong> e <strong>StandVirtual</strong></p>
   </footer>
 
-  <script>
-    (function () {
-      const params    = new URLSearchParams(location.search);
-      const sessionId = params.get('session_id');
-      const icon      = document.getElementById('status-icon');
-      const title     = document.getElementById('status-title');
-      const sub       = document.getElementById('status-sub');
-      const back      = document.getElementById('status-back');
-
-      function showError() {
-        icon.textContent  = '❌';
-        title.textContent = 'Erro ao verificar pagamento';
-        sub.textContent   = 'Se o pagamento foi concluído, o anúncio ficará em destaque em breve. Podes voltar à página principal.';
-        back.style.display = '';
-      }
-
-      if (!sessionId) { showError(); return; }
-
-      fetch('/api/verify?session_id=' + encodeURIComponent(sessionId))
-        .then(r => r.json())
-        .then(data => {
-          if (data.paid) {
-            icon.textContent  = '⭐';
-            title.textContent = 'Pagamento confirmado!';
-            sub.textContent   = `O teu anúncio está em destaque por ${data.days} ${data.days === 1 ? 'dia' : 'dias'}.`;
-          } else {
-            icon.textContent  = '⏳';
-            title.textContent = 'Pagamento em processamento';
-            sub.textContent   = 'Aguarda um momento. O destaque será ativado assim que o pagamento for confirmado.';
-          }
-          back.style.display = '';
-        })
-        .catch(showError);
-    })();
-  </script>
+  <script src="success.js"></script>
 </body>
 </html>

@@ -40,9 +40,12 @@ async function extractListings(page) {
       const price = spans.find((t) => /\d/.test(t) && (t.includes('€') || t.toLowerCase().includes('grát'))) || null;
       // Strip query params from URL to get clean item link
       const url = el.href.split('?')[0];
+      const rawTitle = img ? img.alt : (spans[0] || null);
+      // Strip " no grupo [name]" suffix injected by Facebook into alt text
+      const title = rawTitle ? rawTitle.replace(/\s+no grupo\b.*/i, '').trim() : null;
       return {
         source:      'facebook',
-        title:       img ? img.alt : (spans[0] || null),
+        title:       title || null,
         price,
         location:    spans[spans.length - 1] || null,
         category:    null,
