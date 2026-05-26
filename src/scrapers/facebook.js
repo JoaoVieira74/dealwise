@@ -1,29 +1,19 @@
 const { chromium } = require('playwright-extra');
 const stealth = require('puppeteer-extra-plugin-stealth');
 const path = require('path');
+const fs = require('fs');
 
 chromium.use(stealth());
 
 const PROFILE_DIR = process.env.FACEBOOK_PROFILE_DIR || path.join(__dirname, '..', '..', 'facebook_profile');
-const MARKETPLACE_URL = 'https://www.facebook.com/marketplace/portugal/';
+const MARKETPLACE_URL = 'https://www.facebook.com/marketplace/portugal/vehicles/cars/';
 
 function isBlocked(url) {
   return url.includes('/login') || url.includes('/checkpoint') ||
          url.includes('/two_step_verification') || url.includes('two_factor');
 }
 
-async function waitUntilUnblocked(page) {
-  const headless = process.env.FB_HEADLESS !== 'false';
-  const maxWait  = headless ? 5 : 150; // headless: 10s; headed: 5min
-  for (let i = 0; i < maxWait; i++) {
-    await page.waitForTimeout(2000);
-    if (!isBlocked(page.url())) return true;
-  }
-  return false;
-}
-
 async function extractListings(page) {
-  // Scroll to trigger lazy loading of item cards
   for (let i = 1; i <= 5; i++) {
     await page.evaluate((n) => window.scrollTo(0, n * 600), i);
     await page.waitForTimeout(1000);
@@ -38,10 +28,8 @@ async function extractListings(page) {
         .map((s) => s.textContent.trim())
         .filter(Boolean);
       const price = spans.find((t) => /\d/.test(t) && (t.includes('€') || t.toLowerCase().includes('grát'))) || null;
-      // Strip query params from URL to get clean item link
       const url = el.href.split('?')[0];
       const rawTitle = img ? img.alt : (spans[0] || null);
-      // Strip " no grupo [name]" suffix injected by Facebook into alt text
       const title = rawTitle ? rawTitle.replace(/\s+no grupo\b.*/i, '').trim() : null;
       return {
         source:      'facebook',
@@ -57,42 +45,52 @@ async function extractListings(page) {
 }
 
 async function scrapeFacebook() {
-  const fs = require('fs');
-  if (!fs.existsSync(PROFILE_DIR)) {
-    console.log('[facebook] No profile found — skipping (set FACEBOOK_PROFILE_DIR to enable)');
+  const cookiesEnv = process.env.FACEBOOK_COOKIES;
+  const hasProfile = fs.existsSync(PROFILE_DIR);
+
+  if (!cookiesEnv && !hasProfile) {
+    console.log('[facebook] No auth configured — skipping. Run scripts/fb-login.js locally to set up.');
     return [];
   }
 
-  const headless = process.env.FB_HEADLESS !== 'false';
-  const ctx = await chromium.launchPersistentContext(PROFILE_DIR, {
-    headless,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--start-minimized'],
-    viewport: { width: 1280, height: 800 },
-  });
-
+  let ctx;
   try {
+    if (cookiesEnv) {
+      // Use cookies from env var (base64-encoded JSON array)
+      const cookies = JSON.parse(Buffer.from(cookiesEnv, 'base64').toString('utf8'));
+      ctx = await chromium.launchPersistentContext('', {
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+        viewport: { width: 1280, height: 800 },
+      });
+      await ctx.addCookies(cookies);
+    } else {
+      // Fall back to saved profile dir
+      ctx = await chromium.launchPersistentContext(PROFILE_DIR, {
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+        viewport: { width: 1280, height: 800 },
+      });
+    }
+
     const page = await ctx.newPage();
     await page.goto(MARKETPLACE_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.waitForTimeout(3000);
 
     if (isBlocked(page.url())) {
-      console.log('[facebook] Auth required — opening browser for verification...');
-      const unblocked = await waitUntilUnblocked(page);
-      if (!unblocked) {
-        console.warn('[facebook] Auth timeout. Skipping Facebook.');
-        return [];
-      }
-      await page.goto(MARKETPLACE_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      console.warn('[facebook] Auth required — cookies may have expired. Re-run scripts/fb-login.js.');
+      return [];
     }
 
     const listings = await extractListings(page);
-    const valid    = listings.filter((l) => l.title && l.listing_url);
+    const valid = listings.filter((l) => l.title && l.listing_url);
     console.log(`[facebook] Found ${valid.length} listings`);
     return valid;
   } catch (err) {
     console.error('[facebook] Scrape failed:', err.message);
     return [];
   } finally {
-    await ctx.close();
+    if (ctx) await ctx.close();
   }
 }
 

@@ -2,42 +2,36 @@ const cron = require('node-cron');
 const { scrapeOlx }          = require('./scrapers/olx');
 const { scrapeFacebook }     = require('./scrapers/facebook');
 const { scrapeStandvirtual } = require('./scrapers/standvirtual');
+const { scrapeCustoJusto }   = require('./scrapers/custojusto');
+const { scrapeAutoSapo }     = require('./scrapers/autosapo');
+const { scrapeCarroJa }      = require('./scrapers/carroja');
 const { upsertListings, logScrape } = require('./db/database');
+
+const SCRAPERS = [
+  { name: 'olx',         fn: scrapeOlx },
+  { name: 'facebook',    fn: scrapeFacebook },
+  { name: 'standvirtual',fn: scrapeStandvirtual },
+  { name: 'custojusto',  fn: scrapeCustoJusto },
+  { name: 'autosapo',    fn: scrapeAutoSapo },
+  { name: 'carroja',     fn: scrapeCarroJa },
+];
 
 async function runScrapeJob(db) {
   console.log('[scheduler] Starting scrape cycle...');
 
-  const [olxResult, fbResult, svResult] = await Promise.allSettled([
-    scrapeOlx(),
-    scrapeFacebook(),
-    scrapeStandvirtual(),
-  ]);
+  const results = await Promise.allSettled(SCRAPERS.map(s => s.fn()));
 
-  if (olxResult.status === 'fulfilled') {
-    upsertListings(db, olxResult.value);
-    logScrape(db, 'olx', 'ok', olxResult.value.length, null);
-    console.log(`[scheduler] OLX: ${olxResult.value.length} listings saved`);
-  } else {
-    logScrape(db, 'olx', 'error', 0, olxResult.reason?.message ?? 'unknown');
-    console.error('[scheduler] OLX failed:', olxResult.reason);
-  }
-
-  if (fbResult.status === 'fulfilled') {
-    upsertListings(db, fbResult.value);
-    logScrape(db, 'facebook', 'ok', fbResult.value.length, null);
-    console.log(`[scheduler] Facebook: ${fbResult.value.length} listings saved`);
-  } else {
-    logScrape(db, 'facebook', 'error', 0, fbResult.reason?.message ?? 'unknown');
-    console.error('[scheduler] Facebook failed:', fbResult.reason);
-  }
-
-  if (svResult.status === 'fulfilled') {
-    upsertListings(db, svResult.value);
-    logScrape(db, 'standvirtual', 'ok', svResult.value.length, null);
-    console.log(`[scheduler] StandVirtual: ${svResult.value.length} listings saved`);
-  } else {
-    logScrape(db, 'standvirtual', 'error', 0, svResult.reason?.message ?? 'unknown');
-    console.error('[scheduler] StandVirtual failed:', svResult.reason);
+  for (let i = 0; i < SCRAPERS.length; i++) {
+    const { name } = SCRAPERS[i];
+    const result   = results[i];
+    if (result.status === 'fulfilled') {
+      upsertListings(db, result.value);
+      logScrape(db, name, 'ok', result.value.length, null);
+      console.log(`[scheduler] ${name}: ${result.value.length} listings saved`);
+    } else {
+      logScrape(db, name, 'error', 0, result.reason?.message ?? 'unknown');
+      console.error(`[scheduler] ${name} failed:`, result.reason);
+    }
   }
 
   console.log('[scheduler] Scrape cycle complete.');
