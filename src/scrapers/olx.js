@@ -1,4 +1,7 @@
-const { chromium } = require('playwright');
+const { chromium } = require('playwright-extra');
+const stealth = require('puppeteer-extra-plugin-stealth');
+
+chromium.use(stealth());
 
 const OLX_URL = 'https://www.olx.pt/carros-motos-e-barcos/carros/';
 const MAX_PAGES = 3;
@@ -6,23 +9,33 @@ const MAX_PAGES = 3;
 async function scrapeOlx() {
   const browser = await chromium.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-blink-features=AutomationControlled',
+      '--disable-dev-shm-usage',
+    ],
   });
-  const page = await browser.newPage();
+  const context = await browser.newContext({
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    locale: 'pt-PT',
+    timezoneId: 'Europe/Lisbon',
+  });
+  const page = await context.newPage();
   const listings = [];
 
   try {
     for (let pageNum = 1; pageNum <= MAX_PAGES; pageNum++) {
       const url = pageNum === 1 ? OLX_URL : `${OLX_URL}?page=${pageNum}`;
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
 
       // Wait for consent dialog to appear, then dismiss it
-      await page.waitForTimeout(2500);
+      await page.waitForTimeout(3000);
       await page.click('[id*="onetrust-accept"], [id*="didomi-notice-agree"], button[data-cy="accept-cookies"]')
         .catch(() => null);
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(1000);
 
-      await page.waitForSelector('[data-cy="l-card"]', { timeout: 20000 });
+      await page.waitForSelector('[data-cy="l-card"]', { timeout: 30000 });
 
       // Scroll full page height to trigger all lazy-loaded images
       await page.evaluate(async () => {
