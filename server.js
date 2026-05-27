@@ -5,6 +5,14 @@ const { initDb }      = require('./src/db/database');
 const { createApp }   = require('./src/api');
 const { startScheduler } = require('./src/scheduler');
 
+// Prevent playwright-extra CDP errors from crashing the process
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection] caught:', reason?.message ?? reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException] caught:', err?.message ?? err);
+});
+
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'market.db');
 const PORT    = process.env.PORT || 3000;
 
