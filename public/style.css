@@ -155,7 +155,8 @@ header {
 .dot-fb     { background: var(--fb); }
 .dot-sv     { background: #0077b6; }
 .dot-cj     { background: #e05a00; }
-.dot-as     { background: #c0392b; }
+.dot-as       { background: #c0392b; }
+.dot-autosapo { background: #c0392b; }
 .dot-dealer { background: #059669; }
 
 .filter-right {
