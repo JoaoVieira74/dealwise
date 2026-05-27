@@ -10,7 +10,7 @@
     icon.textContent   = '❌';
     title.textContent  = 'Erro ao verificar pagamento';
     sub.textContent    = 'Se o pagamento foi concluído, o anúncio ficará em destaque em breve. Podes voltar à página principal.';
-    back.style.display = '';
+    back.classList.remove('u-hidden');
   }
 
   if (!sessionId) { showError(); return; }
@@ -27,7 +27,7 @@
         title.textContent = 'Pagamento em processamento';
         sub.textContent   = 'Aguarda um momento. O destaque será ativado assim que o pagamento for confirmado.';
       }
-      back.style.display = '';
+      back.classList.remove('u-hidden');
     })
     .catch(showError);
 })();

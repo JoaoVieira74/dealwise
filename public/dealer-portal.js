@@ -13,7 +13,7 @@
     if (e.target.classList && e.target.classList.contains('car-thumb')) {
       e.target.classList.add('car-thumb-hidden');
       const ph = e.target.nextElementSibling;
-      if (ph) ph.style.display = 'flex';
+      if (ph) { ph.classList.remove('u-hidden'); ph.style.display = 'flex'; }
     }
   }, true);
 
@@ -40,7 +40,7 @@
     }
     return '<div class="car-list">' + cars.map(function (c) {
       const thumb = c.image_url
-        ? '<img class="car-thumb" src="' + esc(c.image_url) + '" alt="' + esc(c.title) + '" loading="lazy"><div class="car-thumb-placeholder" style="display:none">🚗</div>'
+        ? '<img class="car-thumb" src="' + esc(c.image_url) + '" alt="' + esc(c.title) + '" loading="lazy"><div class="car-thumb-placeholder u-hidden">🚗</div>'
         : '<div class="car-thumb-placeholder">🚗</div>';
       const contact = c.contact_url
         ? '<a href="' + esc(safeHref(c.contact_url)) + '" target="_blank" rel="noopener" class="car-contact-link">Contacto ↗</a>'

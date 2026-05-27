@@ -76,12 +76,6 @@
     ];
     grid.innerHTML = cards.map(c => `<div class="stat-card"><div class="val">${esc(String(c.val))}</div><div class="lbl">${esc(c.lbl)}</div></div>`).join('');
 
-    // Per-source counts
-    (stats.counts || []).forEach(r => {
-      cards; // already rendered
-    });
-
-    // Scrape status
     const tbody = document.getElementById('scrape-tbody');
     const sources = ['olx', 'facebook', 'standvirtual', 'custojusto', 'autosapo'];
     tbody.innerHTML = sources.map(src => {
@@ -110,23 +104,27 @@
         <td>${d.car_count} / ${d.car_limit === 9999 ? '∞' : d.car_limit}</td>
         <td><span class="badge badge-${esc(d.status)}">${esc(d.status)}</span></td>
         <td>${fmtDate(d.created_at)}</td>
-        <td><code style="font-size:.72rem">${esc(d.token.slice(0,8))}…</code>
-            <button class="btn btn-ghost" style="font-size:.7rem;padding:.2rem .4rem" onclick="copyToken('${esc(d.token)}')">copiar</button></td>
-        <td style="white-space:nowrap">
-          ${d.status !== 'active' ? `<button class="btn btn-success" style="margin-right:.3rem" onclick="setStatus('${esc(d.token)}','active')">Ativar</button>` : ''}
-          ${d.status === 'active' ? `<button class="btn btn-ghost" style="margin-right:.3rem" onclick="setStatus('${esc(d.token)}','inactive')">Desativar</button>` : ''}
+        <td>
+          <code class="token-code">${esc(d.token.slice(0,8))}…</code>
+          <button class="btn btn-ghost btn-copy" data-action="copy-token" data-token="${esc(d.token)}">copiar</button>
+        </td>
+        <td class="td-actions">
+          ${d.status !== 'active' ? `<button class="btn btn-success btn-action" data-action="set-status" data-token="${esc(d.token)}" data-status="active">Ativar</button>` : ''}
+          ${d.status === 'active' ? `<button class="btn btn-ghost btn-action" data-action="set-status" data-token="${esc(d.token)}" data-status="inactive">Desativar</button>` : ''}
         </td>
       </tr>`).join('');
   }
 
-  window.copyToken = function(token) {
-    navigator.clipboard.writeText(token).then(() => alert('Token copiado!'));
-  };
-
-  window.setStatus = async function(token, status) {
-    await apiFetch(`/api/admin/dealers/${encodeURIComponent(token)}`, { method: 'PATCH', body: JSON.stringify({ status }) });
-    loadDealers();
-  };
+  document.getElementById('dealers-tbody').addEventListener('click', async e => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    if (btn.dataset.action === 'copy-token') {
+      navigator.clipboard.writeText(btn.dataset.token).then(() => alert('Token copiado!'));
+    } else if (btn.dataset.action === 'set-status') {
+      await apiFetch(`/api/admin/dealers/${encodeURIComponent(btn.dataset.token)}`, { method: 'PATCH', body: JSON.stringify({ status: btn.dataset.status }) });
+      loadDealers();
+    }
+  });
 
   document.getElementById('reload-dealers').addEventListener('click', loadDealers);
 
@@ -140,16 +138,16 @@
       activate:     document.getElementById('d-activate').value === '1',
     };
     const msg = document.getElementById('create-msg');
-    if (!body.company || !body.contact_name || !body.email) { msg.style.color='#e53e3e'; msg.textContent = 'Preenche empresa, contacto e email.'; return; }
+    if (!body.company || !body.contact_name || !body.email) { msg.className = 'msg-error'; msg.textContent = 'Preenche empresa, contacto e email.'; return; }
     const r = await apiFetch('/api/admin/dealers', { method: 'POST', body: JSON.stringify(body) });
     const data = await r.json();
     if (data.ok) {
-      msg.style.color = '#38a169';
+      msg.className = 'msg-ok';
       msg.textContent = `Criada! Token: ${data.token}`;
       navigator.clipboard.writeText(data.token).catch(() => {});
       loadDealers();
     } else {
-      msg.style.color = '#e53e3e';
+      msg.className = 'msg-error';
       msg.textContent = data.error || 'Erro.';
     }
   });
@@ -162,20 +160,22 @@
     if (!items.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty">Nenhum destaque ativo.</td></tr>`; return; }
     tbody.innerHTML = items.map(l => `
       <tr>
-        <td><a href="${esc(l.listing_url)}" target="_blank" rel="noopener" style="color:var(--accent)">${esc(l.title)}</a></td>
+        <td><a href="${esc(l.listing_url)}" target="_blank" rel="noopener" class="listing-link">${esc(l.title)}</a></td>
         <td>${esc(l.source)}</td>
         <td>${esc(l.price || '—')}</td>
         <td>${esc(l.location || '—')}</td>
         <td>${fmtDate(l.featured_until)}</td>
-        <td><button class="btn btn-danger" onclick="removeFeatured('${esc(l.source)}','${esc(l.listing_url)}')">Remover</button></td>
+        <td><button class="btn btn-danger" data-action="remove-featured" data-source="${esc(l.source)}" data-url="${esc(l.listing_url)}">Remover</button></td>
       </tr>`).join('');
   }
 
-  window.removeFeatured = async function(source, listing_url) {
+  document.getElementById('featured-tbody').addEventListener('click', async e => {
+    const btn = e.target.closest('[data-action="remove-featured"]');
+    if (!btn) return;
     if (!confirm('Remover destaque?')) return;
-    await apiFetch('/api/admin/featured', { method: 'DELETE', body: JSON.stringify({ source, listing_url }) });
+    await apiFetch('/api/admin/featured', { method: 'DELETE', body: JSON.stringify({ source: btn.dataset.source, listing_url: btn.dataset.url }) });
     loadFeatured();
-  };
+  });
 
   document.getElementById('reload-featured').addEventListener('click', loadFeatured);
 

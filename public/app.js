@@ -100,7 +100,7 @@
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  const PIN = `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;opacity:.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
+  const PIN = `<svg class="pin-icon" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
   const STAR_FILLED = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
   const STAR_EMPTY  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
 
@@ -133,7 +133,7 @@
     const placeholder = imgSrc ? '' : `<div class="card-img-placeholder">${carEmoji}</div>`;
     const newBadge   = isNew(l.scraped_at) ? '<span class="badge-new">Novo</span>' : '';
     const expText    = featured && !compact
-      ? `<span style="font-size:0.65rem;color:#b45309;margin-left:auto">${esc(featuredExpiresText(l))}</span>` : '';
+      ? `<span class="feat-exp-text">${esc(featuredExpiresText(l))}</span>` : '';
 
     // Dealer listings: show contact link instead of listing URL; no star button
     const linkHref  = isDealer ? safeUrl(l.contact_url || '#') : safeUrl(l.listing_url);

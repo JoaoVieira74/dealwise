@@ -319,6 +319,9 @@ header {
   align-items: center;
   gap: 0.2rem;
 }
+.pin-icon { flex-shrink: 0; opacity: .5; }
+.feat-exp-text { font-size: 0.65rem; color: #b45309; margin-left: auto; }
+.u-hidden { display: none; }
 
 .card-footer {
   padding: 0.65rem 0.85rem;
