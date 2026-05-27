@@ -187,9 +187,9 @@
       grid.innerHTML = `
         <div class="fb-login-prompt">
           <div class="fb-login-icon">f</div>
-          <p class="fb-login-title">Sem anúncios do Facebook</p>
-          <p class="fb-login-sub">Para ver anúncios do Facebook Marketplace, inicia sessão no Facebook e volta a este site.</p>
-          <a class="fb-login-btn" href="https://www.facebook.com/marketplace/portugal/vehicles/cars/" target="_blank" rel="noopener noreferrer">Abrir Facebook Marketplace</a>
+          <p class="fb-login-title">Facebook Marketplace não disponível</p>
+          <p class="fb-login-sub">O Facebook bloqueia a recolha automática de anúncios. Consulta diretamente no Facebook Marketplace.</p>
+          <a class="fb-login-btn" href="https://www.facebook.com/marketplace/portugal/vehicles/cars/" target="_blank" rel="noopener noreferrer">Ver no Facebook Marketplace →</a>
         </div>`;
     } else {
       grid.innerHTML = filtered.length
