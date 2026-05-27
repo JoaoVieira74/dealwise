@@ -107,13 +107,17 @@
   function renderCard(l, opts) {
     const compact    = opts && opts.compact;
     const isDealer   = l.source === 'dealer';
-    const badgeClass = l.source === 'olx' ? 'badge-olx'
+    const badgeClass = l.source === 'olx'          ? 'badge-olx'
       : l.source === 'facebook'    ? 'badge-facebook'
       : l.source === 'standvirtual'? 'badge-standvirtual'
+      : l.source === 'custojusto'  ? 'badge-custojusto'
+      : l.source === 'autosapo'    ? 'badge-autosapo'
       : 'badge-dealer';
-    const badgeLabel = l.source === 'olx' ? 'OLX'
+    const badgeLabel = l.source === 'olx'          ? 'OLX'
       : l.source === 'facebook'    ? 'Facebook'
       : l.source === 'standvirtual'? 'StandVirtual'
+      : l.source === 'custojusto'  ? 'CustoJusto'
+      : l.source === 'autosapo'    ? 'AutoSapo'
       : 'Concessionária';
     const featured   = isFeatured(l);
     const hasImg     = l.image_url && !l.image_url.includes('no_thumbnail') && !l.image_url.includes('static/media');
@@ -179,9 +183,19 @@
       ? `${total} anúncios`
       : `${filtered.length} de ${total} anúncios`;
 
-    grid.innerHTML = filtered.length
-      ? filtered.map(l => renderCard(l)).join('')
-      : '<p class="no-results">Nenhum anúncio encontrado para estes filtros.</p>';
+    if (!filtered.length && activeSource === 'facebook') {
+      grid.innerHTML = `
+        <div class="fb-login-prompt">
+          <div class="fb-login-icon">f</div>
+          <p class="fb-login-title">Sem anúncios do Facebook</p>
+          <p class="fb-login-sub">Para ver anúncios do Facebook Marketplace, inicia sessão no Facebook e volta a este site.</p>
+          <a class="fb-login-btn" href="https://www.facebook.com/marketplace/portugal/vehicles/cars/" target="_blank" rel="noopener noreferrer">Abrir Facebook Marketplace</a>
+        </div>`;
+    } else {
+      grid.innerHTML = filtered.length
+        ? filtered.map(l => renderCard(l)).join('')
+        : '<p class="no-results">Nenhum anúncio encontrado para estes filtros.</p>';
+    }
 
     renderFeaturedSection();
   }

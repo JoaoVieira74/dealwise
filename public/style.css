@@ -154,6 +154,8 @@ header {
 .dot-olx    { background: var(--olx); }
 .dot-fb     { background: var(--fb); }
 .dot-sv     { background: #0077b6; }
+.dot-cj     { background: #e05a00; }
+.dot-as     { background: #c0392b; }
 .dot-dealer { background: #059669; }
 
 .filter-right {
@@ -338,7 +340,17 @@ header {
 .badge-olx         { background: #f0ebff; color: #7c3aed; }
 .badge-facebook    { background: #e8f0fe; color: #1877f2; }
 .badge-standvirtual{ background: #e0f0ff; color: #005f8c; }
+.badge-custojusto  { background: #fff3e0; color: #e05a00; }
+.badge-autosapo    { background: #fdecea; color: #c0392b; }
 .badge-dealer      { background: #ecfdf5; color: #065f46; }
+
+/* ── Facebook login prompt ─────────────────────────────────────────────────── */
+.fb-login-prompt { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1rem; padding:4rem 2rem; text-align:center; grid-column:1/-1; }
+.fb-login-icon   { width:64px; height:64px; border-radius:50%; background:#1877f2; color:#fff; font-size:2rem; font-weight:900; display:flex; align-items:center; justify-content:center; }
+.fb-login-title  { font-size:1.2rem; font-weight:700; color:var(--text); margin:0; }
+.fb-login-sub    { font-size:0.88rem; color:var(--muted); max-width:340px; margin:0; }
+.fb-login-btn    { padding:0.6rem 1.6rem; background:#1877f2; color:#fff; border-radius:999px; text-decoration:none; font-size:0.88rem; font-weight:700; }
+.fb-login-btn:hover { opacity:0.88; }
 
 .card-link {
   font-size: 0.77rem;
