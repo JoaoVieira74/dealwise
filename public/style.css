@@ -630,6 +630,7 @@ footer strong { color: var(--text); font-weight: 600; }
 @media (max-width: 700px) {
   header { padding: 0.85rem 1rem; }
   .tagline { display: none; }
+  .last-updated { display: none; }
   .search-bar-wrap { padding: 0.6rem 1rem; }
   .filters { padding: 0.6rem 1rem; }
   .filter-right { width: 100%; }
