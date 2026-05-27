@@ -64,7 +64,7 @@ async function scrapeAutoSapo() {
   } catch (err) {
     console.error('[autosapo] Scrape failed:', err.message);
   } finally {
-    await browser.close();
+    await browser.close().catch(() => null);
   }
 
   console.log(`[autosapo] Found ${listings.length} listings`);

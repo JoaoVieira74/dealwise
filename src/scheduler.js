@@ -4,7 +4,6 @@ const { scrapeFacebook }     = require('./scrapers/facebook');
 const { scrapeStandvirtual } = require('./scrapers/standvirtual');
 const { scrapeCustoJusto }   = require('./scrapers/custojusto');
 const { scrapeAutoSapo }     = require('./scrapers/autosapo');
-const { scrapeCarroJa }      = require('./scrapers/carroja');
 const { upsertListings, logScrape } = require('./db/database');
 
 const SCRAPERS = [
@@ -13,7 +12,6 @@ const SCRAPERS = [
   { name: 'standvirtual',fn: scrapeStandvirtual },
   { name: 'custojusto',  fn: scrapeCustoJusto },
   { name: 'autosapo',    fn: scrapeAutoSapo },
-  { name: 'carroja',     fn: scrapeCarroJa },
 ];
 
 async function runScrapeJob(db) {

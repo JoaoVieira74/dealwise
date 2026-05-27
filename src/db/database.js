@@ -3,7 +3,7 @@ const path = require('path');
 const { randomUUID } = require('crypto');
 
 const schemaSql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
-const SOURCES = ['olx', 'facebook', 'standvirtual', 'custojusto', 'autosapo', 'carroja', 'dealer'];
+const SOURCES = ['olx', 'facebook', 'standvirtual', 'custojusto', 'autosapo', 'dealer'];
 
 const stmtCache = new WeakMap();
 

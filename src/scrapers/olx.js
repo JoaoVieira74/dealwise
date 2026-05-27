@@ -80,7 +80,7 @@ async function scrapeOlx() {
       if (!hasNext) break;
     }
   } finally {
-    await browser.close();
+    await browser.close().catch(() => null);
   }
 
   return listings;

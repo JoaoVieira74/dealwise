@@ -64,7 +64,7 @@ async function scrapeCustoJusto() {
   } catch (err) {
     console.error('[custojusto] Scrape failed:', err.message);
   } finally {
-    await browser.close();
+    await browser.close().catch(() => null);
   }
 
   console.log(`[custojusto] Found ${listings.length} listings`);
