@@ -33,14 +33,15 @@ async function scrapeCustoJusto() {
       });
       await page.waitForTimeout(500);
 
-      // Scroll to trigger lazy-loaded cards
+      // Scroll to trigger lazy-loaded cards and images
       await page.evaluate(async () => {
         for (let y = 0; y < document.body.scrollHeight; y += 400) {
           window.scrollTo(0, y);
-          await new Promise(r => setTimeout(r, 100));
+          await new Promise(r => setTimeout(r, 150));
         }
+        window.scrollTo(0, 0);
       });
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(2500);
 
       const cards = await page.$$eval('a.tw-group[href*="veiculos"]', (els) =>
         els.map((el) => {
@@ -61,7 +62,7 @@ async function scrapeCustoJusto() {
             price,
             location,
             category:    null,
-            image_url:   imgEl ? (imgEl.src || imgEl.dataset.src || null) : null,
+            image_url:   imgEl ? (imgEl.getAttribute('src') || imgEl.src || imgEl.dataset.src || null) : null,
             listing_url: el.href,
           };
         })
