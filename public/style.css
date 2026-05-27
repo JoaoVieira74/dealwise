@@ -654,3 +654,6 @@ footer strong { color: var(--text); font-weight: 600; }
   font-weight: 700;
 }
 .result-back:hover { opacity: 0.88; }
+
+.icon-star { color: #f59e0b; }
+.icon-star-modal { vertical-align: middle; margin-right: 6px; }

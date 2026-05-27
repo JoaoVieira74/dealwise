@@ -4,21 +4,24 @@
  * Usage:
  *   node scripts/fb-login.js
  *
- * 1. A browser window will open.
+ * 1. A browser window will open at Facebook.
  * 2. Log into your Facebook account manually.
- * 3. Navigate to facebook.com/marketplace (to confirm access).
- * 4. Press ENTER in the terminal.
- * 5. The script prints a FACEBOOK_COOKIES value — copy it to Railway Variables.
+ * 3. The script detects login automatically and saves cookies to fb-cookies.txt.
+ * 4. Copy the value from fb-cookies.txt to Railway as FACEBOOK_COOKIES variable.
  */
 
 const { chromium } = require('playwright-extra');
 const stealth = require('puppeteer-extra-plugin-stealth');
-const readline = require('readline');
+const fs = require('fs');
+const path = require('path');
 
 chromium.use(stealth());
 
+const OUT_FILE = path.join(__dirname, 'fb-cookies.txt');
+
 async function main() {
-  console.log('Opening browser... Log into Facebook, then press ENTER here.');
+  console.log('A abrir browser... Faz login no Facebook.');
+  console.log('O script deteta o login automaticamente (tens 5 minutos).\n');
 
   const ctx = await chromium.launchPersistentContext('', {
     headless: false,
@@ -27,22 +30,30 @@ async function main() {
   });
 
   const page = await ctx.newPage();
-  await page.goto('https://www.facebook.com/marketplace/portugal/vehicles/cars/');
+  await page.goto('https://www.facebook.com/login');
 
-  await new Promise((resolve) => {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    rl.question('\nPressione ENTER depois de fazer login no Facebook...\n', () => {
-      rl.close();
-      resolve();
-    });
-  });
+  // Wait until no longer on login/checkpoint page (up to 5 minutes)
+  try {
+    await page.waitForFunction(
+      () => !location.href.includes('/login') && !location.href.includes('/checkpoint') && !location.href.includes('two_factor'),
+      { timeout: 300000, polling: 2000 }
+    );
+  } catch {
+    console.error('Timeout: não foi detetado login em 5 minutos.');
+    await ctx.close();
+    process.exit(1);
+  }
+
+  // Navigate to marketplace to ensure cookies are full
+  await page.goto('https://www.facebook.com/marketplace/portugal/vehicles/cars/');
+  await page.waitForTimeout(3000);
 
   const cookies = await ctx.cookies('https://www.facebook.com');
   const encoded = Buffer.from(JSON.stringify(cookies)).toString('base64');
 
-  console.log('\n✅ Cookies exportados. Adiciona esta variável ao Railway:\n');
-  console.log('FACEBOOK_COOKIES=' + encoded);
-  console.log('\nNota: Os cookies expiram em algumas semanas. Repete este processo quando o Facebook parar de aparecer no site.\n');
+  fs.writeFileSync(OUT_FILE, encoded, 'utf8');
+  console.log(`\n✅ Cookies guardados em: ${OUT_FILE}`);
+  console.log('Copia o conteúdo desse ficheiro para Railway como variável FACEBOOK_COOKIES.\n');
 
   await ctx.close();
 }
