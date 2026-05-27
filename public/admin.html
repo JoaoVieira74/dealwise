@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Dealwise</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f6fa; --surface: #fff; --border: #e2e8f0;
+      --text: #1a202c; --muted: #718096; --accent: #5b4fcf;
+      --red: #e53e3e; --green: #38a169; --yellow: #d69e2e;
+    }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* Login */
+    #login { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2.5rem 2rem; width: 340px; box-shadow: 0 4px 20px rgba(0,0,0,.08); }
+    .login-box h1 { font-size: 1.3rem; margin-bottom: 1.5rem; color: var(--accent); }
+    .login-box input { width: 100%; padding: .65rem .85rem; border: 1px solid var(--border); border-radius: 8px; font-size: .9rem; margin-bottom: 1rem; }
+    .login-box button { width: 100%; padding: .7rem; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: .95rem; font-weight: 600; cursor: pointer; }
+    #login-error { color: var(--red); font-size: .82rem; margin-top: .6rem; text-align: center; }
+
+    /* Shell */
+    #app { display: none; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: .85rem 1.5rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+    header h1 { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+    #logout-btn { font-size: .8rem; color: var(--muted); background: none; border: 1px solid var(--border); padding: .3rem .7rem; border-radius: 6px; cursor: pointer; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--surface); padding: 0 1.5rem; }
+    .tab-btn { padding: .7rem 1.1rem; background: none; border: none; border-bottom: 2px solid transparent; font-size: .88rem; font-weight: 500; color: var(--muted); cursor: pointer; transition: color .15s; }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* Content */
+    .panel { display: none; padding: 1.5rem; }
+    .panel.active { display: block; }
+
+    /* Stats grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.2rem; }
+    .stat-card .val { font-size: 1.8rem; font-weight: 800; }
+    .stat-card .lbl { font-size: .75rem; color: var(--muted); margin-top: .2rem; }
+
+    /* Section */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .8rem; }
+    .section-header h2 { font-size: 1rem; font-weight: 700; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+    table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+    th { text-align: left; padding: .65rem 1rem; font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); font-weight: 600; }
+    td { padding: .65rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbff; }
+
+    /* Badges */
+    .badge { display: inline-block; padding: .15rem .5rem; border-radius: 20px; font-size: .73rem; font-weight: 600; }
+    .badge-active { background: #c6f6d5; color: #276749; }
+    .badge-pending { background: #fefcbf; color: #744210; }
+    .badge-inactive { background: #fed7d7; color: #822727; }
+    .badge-paid { background: #c6f6d5; color: #276749; }
+
+    /* Buttons */
+    .btn { padding: .35rem .75rem; border-radius: 7px; font-size: .8rem; font-weight: 600; cursor: pointer; border: none; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-success { background: var(--green); color: #fff; }
+    .btn-ghost { background: none; border: 1px solid var(--border); color: var(--text); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Form */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-group { display: flex; flex-direction: column; gap: .3rem; }
+    .form-group label { font-size: .78rem; font-weight: 600; color: var(--muted); }
+    .form-group input, .form-group select { padding: .5rem .75rem; border: 1px solid var(--border); border-radius: 7px; font-size: .85rem; width: 100%; }
+    .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; margin-bottom: 1.2rem; }
+    .form-card h3 { font-size: .9rem; font-weight: 700; margin-bottom: .9rem; }
+    .form-actions { margin-top: .9rem; display: flex; gap: .6rem; align-items: center; }
+    #create-msg { font-size: .82rem; color: var(--green); }
+
+    /* Scrape table */
+    .scrape-row td:first-child { font-weight: 600; }
+    .ok { color: var(--green); font-weight: 700; }
+    .err { color: var(--red); font-weight: 700; }
+
+    .empty { padding: 2rem; text-align: center; color: var(--muted); font-size: .88rem; }
+
+    @media (max-width: 600px) {
+      .form-grid, .form-grid.cols-3 { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login">
+  <div class="login-box">
+    <h1>Dealwise Admin</h1>
+    <input type="password" id="token-input" placeholder="Admin token" autocomplete="current-password" />
+    <button id="login-btn">Entrar</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- App shell -->
+<div id="app">
+  <header>
+    <h1>Dealwise Admin</h1>
+    <button id="logout-btn">Sair</button>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="overview">Visão Geral</button>
+    <button class="tab-btn" data-tab="dealers">Concessionárias</button>
+    <button class="tab-btn" data-tab="featured">Destaques</button>
+    <button class="tab-btn" data-tab="payments">Pagamentos</button>
+  </div>
+
+  <!-- Overview -->
+  <div class="panel active" id="tab-overview">
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="section-header"><h2>Estado das Scrapes</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fonte</th><th>Último estado</th><th>Anúncios</th><th>Hora</th></tr></thead>
+        <tbody id="scrape-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Dealers -->
+  <div class="panel" id="tab-dealers">
+    <div class="form-card">
+      <h3>Criar Concessionária</h3>
+      <div class="form-grid">
+        <div class="form-group"><label>Empresa</label><input id="d-company" type="text" placeholder="Auto Silva Lda" /></div>
+        <div class="form-group"><label>Contacto</label><input id="d-contact" type="text" placeholder="João Silva" /></div>
+        <div class="form-group"><label>Email</label><input id="d-email" type="email" placeholder="joao@autosilva.pt" /></div>
+        <div class="form-group"><label>Telefone</label><input id="d-phone" type="tel" placeholder="+351 912 345 678" /></div>
+        <div class="form-group"><label>Plano</label>
+          <select id="d-plan">
+            <option value="basic">Básico — 5 carros (€29,99/mês)</option>
+            <option value="standard">Standard — 15 carros (€59,99/mês)</option>
+            <option value="premium">Premium — Ilimitado (€99,99/mês)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Estado inicial</label>
+          <select id="d-activate">
+            <option value="1">Ativo imediatamente</option>
+            <option value="0">Pendente (requer pagamento)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="create-dealer-btn">Criar</button>
+        <span id="create-msg"></span>
+      </div>
+    </div>
+
+    <div class="section-header"><h2>Todas as Concessionárias</h2><button class="btn btn-ghost" id="reload-dealers">↻ Atualizar</button></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Empresa</th><th>Email</th><th>Plano</th><th>Carros</th><th>Estado</th><th>Criado</th><th>Token</th><th>Ações</th></tr></thead>
+        <tbody id="dealers-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Featured -->
+  <div class="panel" id="tab-featured">
+    <div class="section-header"><h2>Anúncios em Destaque Ativos</h2><button class="btn btn-ghost" id="reload-featured">↻ Atualizar</button></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Título</th><th>Fonte</th><th>Preço</th><th>Localização</th><th>Expira</th><th>Ação</th></tr></thead>
+        <tbody id="featured-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Payments -->
+  <div class="panel" id="tab-payments">
+    <div class="section-header"><h2>Histórico de Pagamentos</h2><button class="btn btn-ghost" id="reload-payments">↻ Atualizar</button></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Email</th><th>Fonte</th><th>Dias</th><th>Valor</th><th>Estado</th><th>Data</th></tr></thead>
+        <tbody id="payments-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>

@@ -142,6 +142,52 @@ function removeDealerCar(db, carId, dealerId) {
   return true;
 }
 
+// ── Admin helpers ────────────────────────────────────────────────────────────
+
+function getAllDealers(db) {
+  return db.prepare(`
+    SELECT d.*, COUNT(dc.id) AS car_count
+    FROM dealers d
+    LEFT JOIN dealer_cars dc ON dc.dealer_id = d.id
+    GROUP BY d.id
+    ORDER BY d.created_at DESC
+  `).all();
+}
+
+function setDealerStatus(db, token, status) {
+  db.prepare('UPDATE dealers SET status = ? WHERE token = ?').run(status, token);
+}
+
+function getAllFeatured(db) {
+  return db.prepare(`
+    SELECT id, source, title, price, location, listing_url, featured_until, scraped_at
+    FROM listings
+    WHERE featured_until IS NOT NULL AND datetime(featured_until) > datetime('now')
+    ORDER BY featured_until DESC
+  `).all();
+}
+
+function getAllPayments(db) {
+  return db.prepare(`
+    SELECT * FROM payments ORDER BY created_at DESC LIMIT 200
+  `).all();
+}
+
+function getAdminStats(db) {
+  const counts = db.prepare(`
+    SELECT source, COUNT(*) AS total FROM listings GROUP BY source
+  `).all();
+  const revenue = db.prepare(`
+    SELECT COALESCE(SUM(amount_cents), 0) AS total_cents FROM payments WHERE status = 'paid'
+  `).get();
+  const activeD = db.prepare(`SELECT COUNT(*) AS n FROM dealers WHERE status = 'active'`).get();
+  const pendingD = db.prepare(`SELECT COUNT(*) AS n FROM dealers WHERE status = 'pending'`).get();
+  const featured = db.prepare(`
+    SELECT COUNT(*) AS n FROM listings WHERE featured_until IS NOT NULL AND datetime(featured_until) > datetime('now')
+  `).get();
+  return { counts, revenue_cents: revenue.total_cents, active_dealers: activeD.n, pending_dealers: pendingD.n, featured_active: featured.n };
+}
+
 // ── Scrape log ───────────────────────────────────────────────────────────────
 
 function logScrape(db, source, status, count, message) {
@@ -152,7 +198,7 @@ function logScrape(db, source, status, count, message) {
 
 function getLastScrapeStatus(db) {
   const result = {};
-  for (const src of ['olx', 'facebook', 'standvirtual']) {
+  for (const src of ['olx', 'facebook', 'standvirtual', 'custojusto', 'autosapo']) {
     result[src] = db.prepare(
       'SELECT * FROM scrape_log WHERE source = ? ORDER BY ran_at DESC LIMIT 1'
     ).get(src) ?? null;
@@ -168,4 +214,6 @@ module.exports = {
   createDealer, getDealerByToken, getDealerBySessionId,
   setDealerSession, activateDealer,
   getDealerCars, addDealerCar, removeDealerCar,
+  getAllDealers, setDealerStatus,
+  getAllFeatured, getAllPayments, getAdminStats,
 };

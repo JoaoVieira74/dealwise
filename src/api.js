@@ -9,6 +9,8 @@ const {
   createDealer, getDealerByToken, getDealerBySessionId,
   setDealerSession, activateDealer,
   getDealerCars, addDealerCar, removeDealerCar,
+  getAllDealers, setDealerStatus,
+  getAllFeatured, getAllPayments, getAdminStats,
 } = require('./db/database');
 
 const apiLimiter = rateLimit({
@@ -345,6 +347,66 @@ function createApp(db) {
 
     const ok = removeDealerCar(db, id, dealer.id);
     res.json({ ok });
+  });
+
+  // ── Admin ─────────────────────────────────────────────────────────────────
+  function requireAdmin(req, res, next) {
+    const adminToken = process.env.ADMIN_TOKEN;
+    if (!adminToken) return res.status(503).json({ error: 'Admin not configured — set ADMIN_TOKEN env var' });
+    const auth = (req.headers.authorization || '').replace('Bearer ', '').trim();
+    if (auth !== adminToken) return res.status(401).json({ error: 'Unauthorized' });
+    next();
+  }
+
+  app.get('/api/admin/stats', requireAdmin, (req, res) => {
+    res.json(getAdminStats(db));
+  });
+
+  app.get('/api/admin/dealers', requireAdmin, (req, res) => {
+    res.json(getAllDealers(db));
+  });
+
+  app.post('/api/admin/dealers', requireAdmin, express.json({ limit: '8kb' }), (req, res) => {
+    const { company, contact_name, email, phone, plan, activate } = req.body || {};
+    if (!company || !contact_name || !email || !DEALER_PLANS[plan])
+      return res.status(400).json({ error: 'missing required fields: company, contact_name, email, plan' });
+    const planInfo = DEALER_PLANS[plan];
+    const token = createDealer(db, {
+      company: company.trim(),
+      contactName: contact_name.trim(),
+      email: email.trim(),
+      phone: phone?.trim() || null,
+      plan,
+      carLimit: planInfo.carLimit,
+    });
+    if (activate) {
+      setDealerStatus(db, token, 'active');
+    }
+    res.json({ ok: true, token });
+  });
+
+  app.patch('/api/admin/dealers/:token', requireAdmin, express.json({ limit: '4kb' }), (req, res) => {
+    const { token } = req.params;
+    const { status } = req.body || {};
+    if (!['active', 'pending', 'inactive'].includes(status))
+      return res.status(400).json({ error: 'status must be active | pending | inactive' });
+    setDealerStatus(db, token, status);
+    res.json({ ok: true });
+  });
+
+  app.get('/api/admin/featured', requireAdmin, (req, res) => {
+    res.json(getAllFeatured(db));
+  });
+
+  app.delete('/api/admin/featured', requireAdmin, express.json({ limit: '4kb' }), (req, res) => {
+    const { source, listing_url } = req.body || {};
+    if (!SOURCES.includes(source) || !listing_url) return res.status(400).json({ error: 'invalid body' });
+    unfeatureListing(db, source, listing_url);
+    res.json({ ok: true });
+  });
+
+  app.get('/api/admin/payments', requireAdmin, (req, res) => {
+    res.json(getAllPayments(db));
   });
 
   // ── Image proxy ───────────────────────────────────────────────────────────
