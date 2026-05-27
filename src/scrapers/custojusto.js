@@ -25,54 +25,37 @@ async function scrapeCustoJusto() {
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
       await page.waitForTimeout(2000);
 
-      // Remove CybotCookiebot consent overlay
-      await page.evaluate(() => {
-        document.getElementById('CybotCookiebotDialog')?.remove();
-        document.getElementById('CybotCookiebotDialogBodyUnderlay')?.remove();
-        document.body.style.overflow = 'auto';
+      // Extract listings directly from __NEXT_DATA__ JSON — no lazy-load timing issues
+      const items = await page.evaluate(() => {
+        const nd = window.__NEXT_DATA__?.props?.pageProps;
+        if (!nd) return [];
+        return (nd.listItems || nd.listings || nd.data || nd.items || []).map(item => ({
+          listID:        item.listID,
+          title:         item.title,
+          price:         item.price,
+          imageFullURL:  item.imageFullURL,
+          url:           item.url,
+          district:      item.locationNames?.district || null,
+          county:        item.locationNames?.county || null,
+        }));
       });
-      await page.waitForTimeout(500);
 
-      // Scroll to trigger lazy-loaded cards and images
-      await page.evaluate(async () => {
-        for (let y = 0; y < document.body.scrollHeight; y += 400) {
-          window.scrollTo(0, y);
-          await new Promise(r => setTimeout(r, 150));
-        }
-        window.scrollTo(0, 0);
-      });
-      await page.waitForTimeout(2500);
+      const cards = items
+        .filter(item => item.title && item.url)
+        .map(item => ({
+          source:      'custojusto',
+          title:       item.title,
+          price:       item.price != null ? `${item.price.toLocaleString('pt-PT')} €` : null,
+          location:    item.district || item.county || null,
+          category:    null,
+          image_url:   item.imageFullURL || null,
+          listing_url: item.url.startsWith('http') ? item.url : `https://www.custojusto.pt${item.url}`,
+        }));
 
-      const cards = await page.$$eval('a.tw-group[href*="veiculos"]', (els) =>
-        els.map((el) => {
-          const titleEl = el.querySelector('h2, h3');
-          const imgEl   = el.querySelector('img');
-          const lines   = (el.innerText || '').split('\n').map(s => s.trim()).filter(Boolean);
+      listings.push(...cards);
 
-          // Find price line (contains €)
-          const priceIdx = lines.findLastIndex ? lines.findLastIndex(l => l.includes('€')) : (() => { let i = -1; lines.forEach((l,j) => { if (l.includes('€')) i = j; }); return i; })();
-          const price    = priceIdx >= 0 ? lines[priceIdx] : null;
-          // Location is the line before price that isn't a car spec (fuel/trans/year)
-          const location = priceIdx > 0 && !/Diesel|Gasolina|Manual|Automático|\d{4}/.test(lines[priceIdx - 1])
-            ? lines[priceIdx - 1] : null;
-
-          return {
-            source:      'custojusto',
-            title:       titleEl ? titleEl.textContent.trim() : (lines.find(l => l.length > 5 && !/^\d+$|Montra|PRO|Hoje|Ontem|mai|abr|mar/.test(l)) || null),
-            price,
-            location,
-            category:    null,
-            image_url:   imgEl ? (imgEl.getAttribute('src') || imgEl.src || imgEl.dataset.src || null) : null,
-            listing_url: el.href,
-          };
-        })
-      ).catch(() => []);
-
-      listings.push(...cards.filter((c) => c.title && c.listing_url));
-
-      // Check for next page
-      const hasNext = await page.$('a[rel="next"], [aria-label*="próxima"], [class*="next"]:not([class*="disabled"])');
-      if (!hasNext) break;
+      // If fewer than 40 items, we've hit the last page
+      if (items.length < 40) break;
     }
   } catch (err) {
     console.error('[custojusto] Scrape failed:', err.message);
